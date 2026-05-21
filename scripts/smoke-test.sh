@@ -5,3 +5,4 @@ export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-dummy}"
 export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-dummy}"
 
 python -m pytest test_imports_quick.py
+node tests/server-contract.test.js
