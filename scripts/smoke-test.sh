@@ -4,5 +4,5 @@ set -euo pipefail
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-dummy}"
 export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-dummy}"
 
-python -m pytest test_imports_quick.py
+python -m pytest test_imports_quick.py test_world_exporter.py
 node tests/server-contract.test.js
