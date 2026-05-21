@@ -1,33 +1,39 @@
-# c:\Users\darre\OneDrive\Desktop\Realitas Neo\.gitignore
-
-# Environments
-.env
-.venv
-env/
-venv/
-
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# IDEs
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local secrets/config
+.env
+.env.*
+!.env.example
+*.local
+
+# Runtime/generated state
+logs/
+simulation_data/
+sessions/
+session_data/
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
 
-# Generated runtime data
-simulation_data/
-logs/
-*.log
-
-# Root-level generated session outputs
-sessions/
-
-# Root-level UUID-named run artifacts (e.g., generated maps/caches)
-????????-????-????-????-????????????/
-
-# Local test artifacts
-test_data/
-
-# Local scratch
-TRASH BIN/
+# Build artifacts
+build/
+dist/
+*.egg-info/
