@@ -46,6 +46,7 @@ REALITAS_DEPLOY_CONFIRM=deploy-realitas REALITAS_ENABLE_NGINX=1 scripts/deploy-r
 ```bash
 scripts/health-probe.sh http://127.0.0.1:3000/health
 scripts/health-probe.sh http://178.104.92.122/health
+scripts/public-smoke-test.sh https://dev.subrealiti.es
 ```
 
 ## Rollback
