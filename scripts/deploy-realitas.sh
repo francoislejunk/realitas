@@ -145,6 +145,15 @@ if [[ -f "$REALITAS_CONTEXT_DB" && -f realitas_world_exporter.py ]]; then
     --db "$REALITAS_CONTEXT_DB" \
     --out "$REALITAS_WORLD_STATE_FILE" \
     --session "${REALITAS_CONTEXT_SESSION:-default}"
+elif [[ "${REALITAS_SEED_DEV_CONTEXT:-1}" == "1" && -f realitas_dev_seed.py && -f realitas_world_exporter.py ]]; then
+  echo "remote: context DB absent; seeding dev ContextStore at $REALITAS_CONTEXT_DB"
+  python3 realitas_dev_seed.py \
+    --db "$REALITAS_CONTEXT_DB" \
+    --session "${REALITAS_CONTEXT_SESSION:-default}"
+  python3 realitas_world_exporter.py \
+    --db "$REALITAS_CONTEXT_DB" \
+    --out "$REALITAS_WORLD_STATE_FILE" \
+    --session "${REALITAS_CONTEXT_SESSION:-default}"
 else
   echo "remote: world-state export skipped; context DB not found at $REALITAS_CONTEXT_DB"
 fi
