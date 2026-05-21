@@ -1,0 +1,25 @@
+name: Public Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Public Realitas base URL"
+        required: false
+        default: "https://dev.subrealiti.es"
+        type: string
+  schedule:
+    - cron: "17 * * * *"
+
+jobs:
+  public-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REALITAS_PUBLIC_BASE_URL: ${{ inputs.base_url || 'https://dev.subrealiti.es' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Probe public Realitas endpoint
+        run: ./scripts/public-smoke-test.sh
