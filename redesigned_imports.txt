@@ -1,0 +1,63 @@
+All from imports in redesigned_main.py:
+typing: Optional, List, Dict, Any
+pathlib: Path
+actor_sheet: ActorSheet, SFactors, Item, StatusType
+actors: Actor, UserActor, NonUserActor
+agents.conductor_agent: ConductorAgent
+agents.creator_agent: CreatorAgent
+agents.narrator_agent: NarratorAgent
+multi_actor_manager: MultiActorManager, ActorRole
+enhanced_round_manager: EnhancedRoundManager
+enhanced_reporter: EnhancedReporter
+enhanced_dynamic_actor_system: EnhancedDynamicActorSystem, EnhancedDynamicActorDetector
+enhanced_sympathy_system: EnhancedSympathyManager
+enhanced_temporary_recovery_system: EnhancedTemporaryRecoveryIntegrator
+logbook.utas_logger: UTASLogger
+color_utils: Color
+agents.tracker_agent: TrackerAgent
+llm_agents.scene_manager: SceneManager
+llm_agents.sympathy_initialization: assign_initial_sympathies
+llm_agents.nua_context_system: NUAContextManager
+diegetic_transition_system: DiegeticTransitionSystem, display_diegetic_pause
+dotenv: load_dotenv
+narrative_utils: get_serendipity_descriptor, get_narrative_descriptor, get_success_level_narration
+label_utils: normalize_sfactor_label
+rule_of_3s: RuleOf3Classifier, RuleOf3Category
+survival_system: SurvivalManager, SurvivalNeed
+survival_actions: get_critical_survival_actions
+survival_action_analyzer: survival_analyzer
+time_cycle_system: TimeCycleTracker, TimeOfDay, get_time_display_name
+reactor_time_system: ReactorTimeManager, create_time_expired_result, ActionSpeed, display_time_budget_info
+scene_continuity_validator: continuity_validator
+ally_coordination_system: ally_coordinator
+time_lighting_updater: time_lighting_updater
+world_spatial_integration: handle_world_spatial_command, get_world_context_for_narrator
+persistent_context_manager: get_context_manager
+context_injection_helper: (
+inventory_manager: InventoryManager
+location_distance_tracker: get_location_tracker, LocationType, TravelMethod
+intent_availability_system: IntentAvailabilitySystem, IntentAvailability
+do_nothing_action: DoNothingAction, check_and_execute_do_nothing
+progression_tracker: ProgressionManager, InteractionType
+progression_integration_helper: process_and_display_progression
+goal_progress_tracker: GoalProgressTracker, process_goal_progress, display_goal_progress_update
+intent_based_memory_creation: IntentBasedMemoryCreator, display_memory_creation
+diegetic_transition_system: DiegeticTransitionSystem, IntentScope, display_diegetic_pause, display_atomic_experience
+actors: ActorCategory, get_actor_category, can_graduate_to_mnua
+actors: get_s_trait_outliers, format_outliers_for_narrative
+sensing_bubble_system: (
+internal_voice_system: (
+pygame_spatial_map: (
+llm_agents.encounter_checker: EncounterChecker, SimulationMode
+simulation_time_tracker: SimulationTimeTracker
+key_memories_system: (
+mention_system: MentionSystem
+npc_memory_system: (
+automatic_memory_creation: (
+vessel_selection_system: create_vessel_selection_system
+llm_agents.scene_event_scheduler: SceneEventScheduler
+master_time_coordinator: initialize_master_time_coordinator, get_master_time_coordinator, TimeEventType
+save_coordinator: initialize_save_coordinator, get_save_coordinator
+enhanced_monetary_system: EnhancedMonetaryProcessor
+narrative_context_system: NarrativeEventType, NarrativeImportance
+typing: Optional, Dict, Any

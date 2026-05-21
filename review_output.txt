@@ -1,0 +1,1423 @@
+🔍 Starting Realitas Neo System Review...
+============================================================
+📋 Reviewing Agent Architecture...
+🌐 Reviewing Context Systems...
+💭 Reviewing Memory Systems...
+👥 Reviewing Actor Systems...
+📖 Reviewing Narrative Systems...
+⚔️ Reviewing Exchange Systems...
+✅ Reviewing Validation Systems...
+📚 Reviewing RAG System...
+🤖 Reviewing LLM Client System...
+👁️ Reviewing Sensory System...
+💬 Reviewing Dialogue System...
+🎯 Reviewing Tactical System...
+📏 Reviewing Rule of 3s System...
+⚡ Reviewing Initiative System...
+🔄 Reviewing Recovery System...
+🌍 Reviewing World Persistence...
+🔍 Reviewing Encounter System...
+❓ Reviewing Inquiry System...
+🧠 Reviewing Internal Voice System...
+🎯 Reviewing Goal/Task System...
+🔓 Reviewing Intent Availability System...
+💰 Reviewing Inventory/Economic Systems...
+⏰ Reviewing Time/Progression Systems...
+🗺️ Reviewing Spatial/Location Systems...
+👤 Reviewing NUA Management Systems...
+🎭 Reviewing Diegetic/Personality Systems...
+💾 Reviewing Save/Pronoun Systems...
+🌲 Reviewing Survival/Witness Systems...
+🎚️ Reviewing Tone/Severity Validation...
+🤖 Reviewing LLM Agents Systems...
+🏗️ Reviewing Architect Agent...
+📄 Reviewing Actor Sheet System...
+🔄 Reviewing Exchange System...
+📰 Reviewing Enhanced Reporter...
+🏛️ Reviewing Reputation System...
+📈 Reviewing Progression Systems...
+🌐 Reviewing Background Simulation...
+🎙️ Reviewing Internal Voice Agents...
+🎯 Reviewing Vessel Selection System...
+🎬 Reviewing Diegetic Tracking...
+❌ Reviewing Failure Systems...
+📍 Reviewing Actor Placement/Filter...
+🖼️ Reviewing Multimedia Systems...
+👥 Reviewing Additional Agents...
+⚡ Reviewing Partial Action System...
+🌍 Reviewing World-Spatial Integration...
+👨‍👩‍👧‍👦 Reviewing Population Systems...
+🔄 Reviewing Mode Transition Enhancer...
+🛠️ Reviewing Utility/Helper Systems...
+🏗️ Reviewing Layout/Visualizer Systems...
+🔍 Reviewing Parser/Wrapper Systems...
+📊 Reviewing Analysis/Helper Systems...
+🎨 Reviewing Trivial Systems...
+🔗 Reviewing Integration Points...
+🚨 Reviewing Edge Cases...
+
+======================================================================
+📊 REALITAS NEO SYSTEM REVIEW REPORT
+======================================================================
+Overall Status: CRITICAL - Immediate action required
+Systems Analyzed: actor_placement_filter, actor_sheet, actor_systems, additional_agents, analysis_helper, architect_agent, background_simulation, context_systems, dialogue_system, diegetic_personality, diegetic_tracking, edge_cases, encounter_system, enhanced_reporter, exchange_system, exchange_systems, failure_systems, goal_task, initiative_system, inquiry_system, integration_points, intent_availability, internal_voice, internal_voice_agents, inventory_economic, layout_visualizer, llm_agents, llm_client, memory_systems, mode_transition, multimedia, narrative_systems, nua_management, parser_wrapper, partial_action, population, progression, rag_system, recovery_system, reputation_system, rule_of_3s, save_pronoun, sensory_system, spatial_location, survival_witness, tactical_system, time_progression, tone_severity, trivial, utility_helpers, validation_systems, vessel_selection, world_persistence, world_spatial
+----------------------------------------------------------------------
+Finding Counts:
+  🔴 Critical: 9
+  🟠 High: 58
+  🟡 Medium: 164
+  🔵 Low: 38
+  ℹ️ Info: 0
+----------------------------------------------------------------------
+
+🎯 TOP PRIORITY RECOMMENDATIONS:
+  1. [CRITICAL] agents/: Verify project structure
+  2. [CRITICAL] MAIN/redesigned_main.py: Initialize context_manager AFTER tracker session is created/loaded, using tracker.session_id
+  3. [CRITICAL] dynamic_actor_system.py:72-80: Replace word-level partial matching with phrase-level matching or require exact substring
+  4. [CRITICAL] MAIN/redesigned_main.py:19630-19660: Add remote_constraint to context_guidance forbidding physical actions
+  5. [CRITICAL] claude_openrouter_proxy.py:16-28: Force reload from .env on every proxy start
+  6. [CRITICAL] actor_sheet.py: Verify actor_sheet.py implementation immediately
+  7. [CRITICAL] actor_sheet.py: Ensure complete serialization of actor state including stats, skills, equipment
+  8. [CRITICAL] exchange_system.py: Verify exchange_system.py implementation
+  9. [CRITICAL] exchange_system.py: Handle all exchange states: initiation, turn resolution, completion, cleanup
+  10. [HIGH] persistent_context_manager.py: Verify all context systems are present
+  11. [HIGH] context_store.py: Verify all context systems are present
+  12. [HIGH] narrative_context_system.py: Verify all context systems are present
+  13. [HIGH] spatial_context_system.py: Verify all context systems are present
+  14. [HIGH] agents/interpreter_agent.py: InterpreterAgent should use tracker.session_id for spatial checks, not 'default'
+  15. [HIGH] intent_based_memory_creation.py: Implement semantic deduplication to prevent 'I met John' and 'I encountered John' as separate memories
+  16. [HIGH] llm_agents/enhanced_narrative_loop.py: Ensure all narrators use narrative_loop.process_turn() for framing
+  17. [HIGH] MAIN/redesigned_main.py:19685-19860: Implement retry loop with continuity feedback for failed validations
+  18. [HIGH] scene_continuity_validator.py: Integrate continuity_validator.validate_narrative() at action entry points
+  19. [HIGH] WORLD_BUILDER/worldbuilding_rag.py: Verify RAG system implementation
+  20. [HIGH] WORLD_BUILDER/realitas_lore.py: Verify RAG system implementation
+
+======================================================================
+📋 DETAILED FINDINGS BY CATEGORY:
+======================================================================
+
+【Actor Placement/Filter】
+  🟠 [HIGH] actor_placement_system.py
+     Issue: Actor placement must respect scene boundaries and logic
+     Fix: Validate actors placed in appropriate locations with valid positions
+     Edge Case: NPCs placed inside walls, under ground, or in impossible locations
+
+  🟡 [MEDIUM] actor_placement_system.py
+     Issue: Actor placement/filter file actor_placement_system.py not found
+     Fix: Verify actor placement/filter implementation
+
+  🟡 [MEDIUM] actor_state_filter.py
+     Issue: Actor placement/filter file actor_state_filter.py not found
+     Fix: Verify actor placement/filter implementation
+
+
+【Actor Sheet】
+  🔴 [CRITICAL] actor_sheet.py
+     Issue: Actor sheet file not found - CRITICAL for all actor data
+     Fix: Verify actor_sheet.py implementation immediately
+
+  🔴 [CRITICAL] actor_sheet.py
+     Issue: All actor attributes must persist across sessions
+     Fix: Ensure complete serialization of actor state including stats, skills, equipment
+     Edge Case: Actor loses skills/equipment on session resume
+
+  🟡 [MEDIUM] actor_sheet.py
+     Issue: Actor sheet must display correct era/year (1962-1975)
+     Fix: Integrate year extraction from RAG for character-appropriate age calculation
+     Edge Case: Character age calculated using wrong year, shows impossible birth date
+
+  🟡 [MEDIUM] actor_sheet.py
+     Issue: Actor goals must be fully displayed and integrated
+     Fix: Display goals with sparks, urgency, and progress in actor sheet
+     Edge Case: Goals exist but not visible in actor sheet display
+
+
+【Actor Systems】
+  🔴 [CRITICAL] dynamic_actor_system.py:72-80
+     Issue: Existing actor reference detection uses overly aggressive partial matching
+     Fix: Replace word-level partial matching with phrase-level matching or require exact substring
+     Edge Case: Input 'I talk to the guard' matches existing actor 'Security Guard' because 'guard' is in both, blocking NUA detection
+     Related: dynamic_actor_system.py, agents/interpreter_agent.py
+
+  🟡 [MEDIUM] actors.py
+     Issue: Actor category (UA/NUA/MNUA/INUA) must be preserved across save/load
+     Fix: Ensure category enum is serialized and restored correctly
+     Edge Case: Category loss causes actors to default to wrong behavior patterns
+
+  🟡 [MEDIUM] llm_agents/sympathy_initialization.py
+     Issue: Newly encountered NPCs may default to neutral sympathy despite context
+     Fix: Pass recent narrative context (lookback=15) to assign_initial_sympathies
+     Edge Case: Phone call with 'best friend' initializes as neutral instead of friendly
+     Related: llm_agents/sympathy_initialization.py, MAIN/redesigned_main.py
+
+
+【Additional Agents】
+  🟡 [MEDIUM] agents/storyteller_agent.py
+     Issue: Storyteller must maintain narrative coherence across long arcs
+     Fix: Track plot threads and ensure satisfying resolution
+     Edge Case: Plot threads introduced but never resolved
+
+  🔵 [LOW] agents/storyteller_agent.py
+     Issue: Additional agent agents/storyteller_agent.py not found
+     Fix: Verify agent implementation
+
+  🔵 [LOW] agents/population_manager.py
+     Issue: Additional agent agents/population_manager.py not found
+     Fix: Verify agent implementation
+
+
+【Agent Architecture】
+  🔴 [CRITICAL] agents/
+     Issue: Agents directory not found
+     Fix: Verify project structure
+
+
+【Analysis/Helper】
+  🟠 [HIGH] response_normalizer.py
+     Issue: All LLM responses must be normalized to consistent format
+     Fix: Standardize field names, types, and structures across all responses
+     Edge Case: Same action produces different response structures on different runs
+
+  🟡 [MEDIUM] response_normalizer.py
+     Issue: Analysis/Helper file response_normalizer.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] spatial_location_analyzer.py
+     Issue: Analysis/Helper file spatial_location_analyzer.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] survival_action_analyzer.py
+     Issue: Analysis/Helper file survival_action_analyzer.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] sympathy_utils.py
+     Issue: Analysis/Helper file sympathy_utils.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] worldbuilding_helpers.py
+     Issue: Analysis/Helper file worldbuilding_helpers.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] ally_coordination_system.py
+     Issue: Analysis/Helper file ally_coordination_system.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] enhanced_sympathy_system.py
+     Issue: Analysis/Helper file enhanced_sympathy_system.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] enhanced_temporary_recovery_system.py
+     Issue: Analysis/Helper file enhanced_temporary_recovery_system.py not found
+     Fix: Verify analysis/helper implementation
+
+  🟡 [MEDIUM] spatial_location_analyzer.py
+     Issue: Spatial relationships must be analyzed correctly
+     Fix: Calculate distances, visibility, and accessibility accurately
+     Edge Case: Actors marked as visible when behind solid obstacles
+
+  🟡 [MEDIUM] survival_action_analyzer.py
+     Issue: Survival actions must be analyzed for resource impact
+     Fix: Track hunger, thirst, fatigue changes from survival activities
+     Edge Case: Long hike doesn't increase hunger or decrease stamina
+
+  🟡 [MEDIUM] sympathy_utils.py
+     Issue: Sympathy calculations must be consistent across systems
+     Fix: Use shared utility functions for all sympathy modifications
+     Edge Case: Same interaction changes sympathy differently in different systems
+
+  🟡 [MEDIUM] worldbuilding_helpers.py
+     Issue: Worldbuilding helpers must respect era constraints
+     Fix: Validate all generated content against 1962-1975 setting
+     Edge Case: Modern technology referenced in worldbuilding data
+
+  🟡 [MEDIUM] ally_coordination_system.py
+     Issue: Allied NPCs must coordinate effectively
+     Fix: Share tactical information and plan joint actions
+     Edge Case: Allies act independently without considering each other
+
+  🟡 [MEDIUM] enhanced_sympathy_system.py
+     Issue: Enhanced sympathy must track complex relationships
+     Fix: Handle sympathy modifiers, history, and context-dependent shifts
+     Edge Case: Sympathy doesn't account for past betrayals or favors
+
+  🔵 [LOW] enhanced_temporary_recovery_system.py
+     Issue: Temporary status recovery must handle edge cases
+     Fix: Properly expire temporary statuses and handle extensions
+     Edge Case: Temporary buffs become permanent due to recovery bug
+
+
+【Architect Agent】
+  🟠 [HIGH] agents/architect_agent.py
+     Issue: Architect agent file not found
+     Fix: Verify architect agent implementation for high-level design
+
+  🟠 [HIGH] agents/architect_agent.py
+     Issue: Architect must maintain scene design authority and consistency
+     Fix: All scene structural changes must flow through architect
+     Edge Case: Scene modifications bypass architect, causing structural inconsistencies
+
+
+【Background Simulation】
+  🟡 [MEDIUM] agents/background_simulation_system.py
+     Issue: Background simulation file not found
+     Fix: Verify background simulation for off-screen NPC activities
+
+  🟡 [MEDIUM] agents/background_simulation_system.py
+     Issue: NPCs must have simulated lives when off-screen
+     Fix: Update NPC positions, activities, and states based on time passed
+     Edge Case: NPCs frozen in place when player leaves, resume exactly as left hours later
+
+
+【Context Systems】
+  🔴 [CRITICAL] MAIN/redesigned_main.py
+     Issue: Session ID must be consistent across all context managers
+     Fix: Initialize context_manager AFTER tracker session is created/loaded, using tracker.session_id
+     Edge Case: If context_manager is initialized before tracker, it uses a new UUID instead of the saved session ID, breaking continuity
+     Related: MAIN/redesigned_main.py:8300-8320, persistent_context_manager.py
+
+  🟠 [HIGH] persistent_context_manager.py
+     Issue: Context system file persistent_context_manager.py not found
+     Fix: Verify all context systems are present
+
+  🟠 [HIGH] context_store.py
+     Issue: Context system file context_store.py not found
+     Fix: Verify all context systems are present
+
+  🟠 [HIGH] narrative_context_system.py
+     Issue: Context system file narrative_context_system.py not found
+     Fix: Verify all context systems are present
+
+  🟠 [HIGH] spatial_context_system.py
+     Issue: Context system file spatial_context_system.py not found
+     Fix: Verify all context systems are present
+
+  🟠 [HIGH] agents/interpreter_agent.py
+     Issue: Spatial context must use correct session ID for continuity checks
+     Fix: InterpreterAgent should use tracker.session_id for spatial checks, not 'default'
+     Edge Case: Using 'default' session causes all spatial continuity checks to fail on session resume
+     Related: agents/interpreter_agent.py:90-109, spatial_context_system.py
+
+
+【Dialogue System】
+  🟡 [MEDIUM] dialogue_context_system.py
+     Issue: Dialogue context must persist across turns
+     Fix: Ensure dialogue history is saved to session storage
+     Edge Case: Lost context causes NPCs to forget conversation thread mid-dialogue
+
+  🔵 [LOW] dialogue_context_system.py
+     Issue: Dialogue file dialogue_context_system.py not found
+     Fix: Verify dialogue system implementation if used
+
+  🔵 [LOW] agents/dialogue_agent.py
+     Issue: Dialogue file agents/dialogue_agent.py not found
+     Fix: Verify dialogue system implementation if used
+
+
+【Diegetic Tracking】
+  🟠 [HIGH] diegetic_clue_tracker.py
+     Issue: Diegetic clues must persist and remain discoverable
+     Fix: Track which clues have been revealed and their current state
+     Edge Case: Clues revealed once then forgotten, never available again
+
+  🟡 [MEDIUM] diegetic_clue_tracker.py
+     Issue: Diegetic tracking file diegetic_clue_tracker.py not found
+     Fix: Verify diegetic tracking implementation
+
+  🟡 [MEDIUM] concrete_detail_tracker.py
+     Issue: Diegetic tracking file concrete_detail_tracker.py not found
+     Fix: Verify diegetic tracking implementation
+
+  🟡 [MEDIUM] concrete_detail_tracker.py
+     Issue: Concrete details must be tracked for continuity
+     Fix: Remember specific objects, positions, and states mentioned in narrative
+     Edge Case: Object mentioned in scene 1 disappears without explanation in scene 2
+
+
+【Diegetic/Personality】
+  🟡 [MEDIUM] diegetic_transition_system.py
+     Issue: Scene/mode transitions must be diegetic (in-world)
+     Fix: Describe transitions as narrative events, not system states
+     Edge Case: 'Loading new scene' appears instead of narrative transition
+
+  🟡 [MEDIUM] personality_mood_system.py
+     Issue: Personality traits must affect behavior and narration
+     Fix: Mood and personality influence available actions and descriptions
+     Edge Case: Angry NPC acts cheerful; Phlegmatic character has volatile reactions
+
+  🔵 [LOW] diegetic_transition_system.py
+     Issue: Diegetic/personality file diegetic_transition_system.py not found
+     Fix: Verify diegetic/personality implementation
+
+  🔵 [LOW] personality_mood_system.py
+     Issue: Diegetic/personality file personality_mood_system.py not found
+     Fix: Verify diegetic/personality implementation
+
+  🔵 [LOW] mode_transition_enhancer.py
+     Issue: Diegetic/personality file mode_transition_enhancer.py not found
+     Fix: Verify diegetic/personality implementation
+
+
+【Edge Cases】
+  🟡 [MEDIUM] MAIN/redesigned_main.py:8318-8320
+     Issue: Session Resume with Stale Context
+     Fix: Ensure sync_context_with_tracker() is called on resume
+     Edge Case: When resuming a session, context_manager may have stale data
+
+  🟡 [MEDIUM] encounter_checker.py
+     Issue: Empty Actor Queue
+     Fix: Validate queue state before accessing turn_queue_position
+     Edge Case: Turn queue may be empty or have position beyond length
+
+  🟡 [MEDIUM] MAIN/redesigned_main.py:19750-19860
+     Issue: Phone Call Actor Reference
+     Fix: Handle missing spatial data gracefully for remote encounters
+     Edge Case: Remote actors may not be in spatial context
+
+  🟡 [MEDIUM] key_memories_system.py
+     Issue: Memory Overflow
+     Fix: Implement memory pruning/aging strategy
+     Edge Case: Unbounded memory growth in key_memories
+
+  🟡 [MEDIUM] rag_lock_utils.py
+     Issue: RAG Lock Timeout
+     Fix: Add timeout handling to get_multi_category_context_for_llm
+     Edge Case: RAG queries may hang indefinitely
+
+  🟡 [MEDIUM] json_utils.py
+     Issue: JSON Parsing Failures
+     Fix: Use extract_and_parse_json with robust fallback parsing
+     Edge Case: LLM responses may contain invalid JSON
+
+  🟡 [MEDIUM] agents/creator_agent.py:304-313
+     Issue: Mode B Validation Crash
+     Fix: Disable validation by default, enable only for strict mode
+     Edge Case: Character creation fails if skills/items not in RAG
+
+  🟡 [MEDIUM] dynamic_actor_system.py:72-80
+     Issue: NUA Detection False Positive
+     Fix: Use phrase-level matching instead of word-level
+     Edge Case: Partial word matching blocks legitimate new actors
+
+  🟡 [MEDIUM] llm_agents/sympathy_initialization.py
+     Issue: Sympathy Context Loss
+     Fix: Pass narrative context to sympathy initialization
+     Edge Case: New NPCs default to neutral despite narrative context
+
+  🟡 [MEDIUM] agents/interpreter_agent.py:90-109
+     Issue: Spatial Session Mismatch
+     Fix: Always use tracker.session_id for spatial operations
+     Edge Case: Spatial manager uses wrong session ID after resume
+
+
+【Encounter System】
+  🟠 [HIGH] encounter_checker.py
+     Issue: Encounter file encounter_checker.py not found
+     Fix: Verify encounter system implementation
+
+  🟠 [HIGH] enhanced_dynamic_actor_detector.py
+     Issue: Encounter file enhanced_dynamic_actor_detector.py not found
+     Fix: Verify encounter system implementation
+
+  🟠 [HIGH] target_detector.py
+     Issue: Encounter file target_detector.py not found
+     Fix: Verify encounter system implementation
+
+  🟠 [HIGH] enhanced_dynamic_actor_detector.py
+     Issue: Dynamic actor detection must distinguish new vs existing actors
+     Fix: Use EnhancedDynamicActorDetector with proper context
+     Edge Case: New actors misidentified as existing; existing actors spawn duplicates
+
+  🟡 [MEDIUM] target_detector.py
+     Issue: Target detection must resolve ambiguous references
+     Fix: Use pronoun resolution and context disambiguation
+     Edge Case: 'I attack him' when multiple males present - which one?
+
+  🟡 [MEDIUM] encounter_checker.py
+     Issue: Encounter state must be validated before each turn
+     Fix: Check active actors, turn queue, and scene consistency
+     Edge Case: Stale encounter state causes actions on absent actors
+
+
+【Enhanced Reporter】
+  🟡 [MEDIUM] enhanced_reporter.py
+     Issue: Enhanced reporter file not found
+     Fix: Verify enhanced reporter for detailed simulation logging
+
+  🟡 [MEDIUM] enhanced_reporter.py
+     Issue: Reporter must capture all simulation events without loss
+     Fix: Log all actor actions, system decisions, and state changes
+     Edge Case: Critical events missing from logs, hindering debugging
+
+
+【Exchange System】
+  🔴 [CRITICAL] exchange_system.py
+     Issue: Main exchange system file not found - CRITICAL
+     Fix: Verify exchange_system.py implementation
+
+  🔴 [CRITICAL] exchange_system.py
+     Issue: Exchange lifecycle (start, process, complete) must be robust
+     Fix: Handle all exchange states: initiation, turn resolution, completion, cleanup
+     Edge Case: Exchange hangs in incomplete state, blocking all further actions
+
+  🟠 [HIGH] exchange_system.py
+     Issue: Contested actions must be properly detected and resolved
+     Fix: Identify opposing actions and apply appropriate resolution mechanics
+     Edge Case: Two actors attack each other but neither recognizes the contest
+
+
+【Exchange Systems】
+  🔴 [CRITICAL] MAIN/redesigned_main.py:19630-19660
+     Issue: Remote encounters (phone calls) must constrain actions to non-physical
+     Fix: Add remote_constraint to context_guidance forbidding physical actions
+     Edge Case: NUA may generate 'approaches you' actions during phone calls, which is physically impossible
+     Related: MAIN/redesigned_main.py, agents/decider_agent.py
+
+  🟠 [HIGH] MAIN/redesigned_main.py:19685-19860
+     Issue: NUA proactions must be validated for continuity before execution
+     Fix: Implement retry loop with continuity feedback for failed validations
+     Edge Case: NUA generates impossible actions (approaching during phone call) without validation
+
+  🟡 [MEDIUM] encounter_checker.py
+     Issue: Turn queue position must advance correctly after each action
+     Fix: Verify round_manager.advance_turn_queue() is called consistently
+     Edge Case: Skipped advancement causes same actor to act twice
+
+
+【Failure Systems】
+  🟠 [HIGH] failure_narrative_generator.py
+     Issue: Failures must generate appropriate narrative consequences
+     Fix: Describe failures with context-appropriate consequences, not generic messages
+     Edge Case: All failures described as 'you failed' regardless of context or severity
+
+  🟡 [MEDIUM] failure_narrative_generator.py
+     Issue: Failure system file failure_narrative_generator.py not found
+     Fix: Verify failure handling implementation
+
+  🟡 [MEDIUM] failure_tracker.py
+     Issue: Failure system file failure_tracker.py not found
+     Fix: Verify failure handling implementation
+
+
+【Goal/Task System】
+  🟠 [HIGH] goal_task_system.py
+     Issue: Goal/task file goal_task_system.py not found
+     Fix: Verify goal/task system implementation
+
+  🟠 [HIGH] goal_progress_tracker.py
+     Issue: Goal/task file goal_progress_tracker.py not found
+     Fix: Verify goal/task system implementation
+
+  🟠 [HIGH] goal_task_system.py
+     Issue: Goals and tasks must persist across sessions
+     Fix: Save goal state with session data and restore on resume
+     Edge Case: Player's goals reset to empty on session resume
+
+  🟡 [MEDIUM] goal_progress_tracker.py
+     Issue: Progress tracking must update based on action outcomes
+     Fix: Integrate with InterpreterAgent to detect goal-relevant actions
+     Edge Case: Actions that advance goals don't update progress
+
+  🟡 [MEDIUM] goal_task_system.py
+     Issue: Goals must have spark types and urgency levels
+     Fix: Classify goals as Urgent, Important, or Opportunistic with appropriate sparks
+     Edge Case: All goals treated equally regardless of urgency, causing focus issues
+
+
+【Initiative System】
+  🟠 [HIGH] initiative_system.py
+     Issue: Initiative rolls must determine turn order correctly
+     Fix: Sort by initiative score descending; ties broken by actor type/attribute
+     Edge Case: Wrong turn order causes actors to act before they should
+
+  🟡 [MEDIUM] initiative_system.py
+     Issue: Initiative file initiative_system.py not found
+     Fix: Verify initiative system implementation
+
+  🟡 [MEDIUM] round_manager.py
+     Issue: Initiative file round_manager.py not found
+     Fix: Verify initiative system implementation
+
+  🟡 [MEDIUM] round_manager.py
+     Issue: Turn queue must advance correctly after each action
+     Fix: Call advance_turn_queue() consistently after action resolution
+     Edge Case: Double-advancement or skipped advancement breaks turn flow
+
+
+【Inquiry System】
+  🟠 [HIGH] inquiry_system.py
+     Issue: Inquiry file inquiry_system.py not found
+     Fix: Verify inquiry system implementation
+
+  🟠 [HIGH] inquiry_helpers.py
+     Issue: Inquiry file inquiry_helpers.py not found
+     Fix: Verify inquiry system implementation
+
+  🟠 [HIGH] inquiry_generation_order.py
+     Issue: Inquiry file inquiry_generation_order.py not found
+     Fix: Verify inquiry system implementation
+
+  🟠 [HIGH] inquiry_system.py
+     Issue: Inquiries must respect intent availability - only available intents can be inquired
+     Fix: Integrate intent_availability_system with inquiry generation
+     Edge Case: Player inquires about unavailable intents, gets impossible answers
+
+  🟡 [MEDIUM] inquiry_system.py
+     Issue: Inquiries must be classified as Fact vs Thought
+     Fix: Use consistent classification: Facts (objective) vs Thoughts (subjective/internal)
+     Edge Case: Confused classification causes wrong response format
+
+  🟡 [MEDIUM] inquiry_generation_order.py
+     Issue: Inquiry generation order affects narrative flow
+     Fix: Ensure inquiries are generated at correct step in turn sequence
+     Edge Case: Inquiries generated too early/late break narrative timing
+
+
+【Integration Points】
+  🟠 [HIGH] agents/conductor_agent.py
+     Issue: Conductor must propagate scene_description to all child agents
+     Fix: Use @scene_description.setter to update interpreter, decider, and narrator
+     Edge Case: Stale scene descriptions cause continuity violations
+     Related: agents/conductor_agent.py:590-616
+
+  🟠 [HIGH] agents/
+     Issue: All LLM-using agents must have access to RAG system
+     Fix: Pass rag_system to all agents that generate content
+     Edge Case: Agents without RAG produce anachronistic content (modern terms in 1960s setting)
+
+  🟡 [MEDIUM] world_persistence_system.py
+     Issue: World state must be loaded before actor interactions
+     Fix: Initialize world_state early in startup sequence
+     Edge Case: Missing world state causes reputation/schedule/aftermath data loss
+
+
+【Intent Availability】
+  🟠 [HIGH] intent_availability_system.py
+     Issue: Intent availability system file not found
+     Fix: Verify intent availability implementation
+
+  🟠 [HIGH] intent_availability_system.py
+     Issue: Intent availability must be context-sensitive
+     Fix: Combat intents unavailable during peaceful scenes, social intents unavailable in combat
+     Edge Case: Player offered 'Attack' intent during friendly conversation
+
+  🟡 [MEDIUM] intent_availability_system.py
+     Issue: Unavailable intents should have diegetic (in-world) explanations
+     Fix: Explain WHY intent is unavailable using narrative context
+     Edge Case: Generic 'not available' messages break immersion
+
+  🟡 [MEDIUM] inquiry_system.py
+     Issue: Inquiries must only be available for available intents
+     Fix: Filter inquiry generation based on intent_availability
+     Edge Case: Player can inquire about intents they cannot actually use
+
+
+【Internal Voice】
+  🟠 [HIGH] internal_voice_system.py
+     Issue: Internal voice system file not found
+     Fix: Verify internal voice system implementation
+
+  🟠 [HIGH] internal_voice_system.py
+     Issue: Internal voice must use period-appropriate language (1962-1975)
+     Fix: Use RAG context to validate all terminology against era
+     Edge Case: Character thinks using modern terms like 'smartphone' or 'WiFi' in 1960s
+
+  🟡 [MEDIUM] agents/narrator_agent.py
+     Issue: Internal voice must be clearly separated from narrative output
+     Fix: Use distinct formatting/branding for internal voice vs narrator descriptions
+     Edge Case: Player cannot distinguish between their thoughts and narrator's descriptions
+
+  🟡 [MEDIUM] internal_voice_system.py
+     Issue: Internal voice should suggest, not instruct
+     Fix: Internal voice is UA's own thoughts - assistant role, not commanding player
+     Edge Case: Internal voice gives commands instead of observations, breaking immersion
+
+
+【Internal Voice Agents】
+  🟡 [MEDIUM] agents/internal_voice_creator_agent.py
+     Issue: Internal voice agent agents/internal_voice_creator_agent.py not found
+     Fix: Verify internal voice agent implementation
+
+  🟡 [MEDIUM] agents/internal_voice_interpreter_agent.py
+     Issue: Internal voice agent agents/internal_voice_interpreter_agent.py not found
+     Fix: Verify internal voice agent implementation
+
+  🟡 [MEDIUM] agents/internal_voice_creator_agent.py
+     Issue: Internal voice must use creator agent for character-consistent thoughts
+     Fix: Ensure character personality influences internal voice generation
+     Edge Case: Gruff warrior has flowery poetic internal monologue
+
+
+【Inventory/Economic】
+  🟠 [HIGH] inventory_manager.py
+     Issue: Inventory must persist across sessions
+     Fix: Save inventory state with actor data and restore on load
+     Edge Case: Items disappear when resuming session
+
+  🟡 [MEDIUM] inventory_manager.py
+     Issue: Inventory/economic file inventory_manager.py not found
+     Fix: Verify inventory/economic implementation
+
+  🟡 [MEDIUM] enhanced_monetary_system.py
+     Issue: Inventory/economic file enhanced_monetary_system.py not found
+     Fix: Verify inventory/economic implementation
+
+  🟡 [MEDIUM] supply_utils.py
+     Issue: Inventory/economic file supply_utils.py not found
+     Fix: Verify inventory/economic implementation
+
+  🟡 [MEDIUM] enhanced_monetary_system.py
+     Issue: Currency amounts must be period-appropriate (1960s economics)
+     Fix: Use RAG to validate prices and wages against 1962-1975 era
+     Edge Case: $50 listed as monthly rent when it should be $150-300 for the era
+
+  🟡 [MEDIUM] enhanced_monetary_system.py
+     Issue: Economic transactions must be narrated diegetically
+     Fix: Describe purchases/sales as narrative events, not UI updates
+     Edge Case: 'You spent $5' appears as system message instead of narrative
+
+
+【LLM Agents】
+  🟠 [HIGH] llm_agents/utas_narrative_formula.py
+     Issue: UTAS formula must generate consistent narrative structure
+     Fix: Validate Step 1-6 execution with proper transitions
+     Edge Case: Formula steps skipped or executed out of order
+
+  🟠 [HIGH] llm_agents/scene_manager.py
+     Issue: Scene lifecycle must be properly managed
+     Fix: Track scene initialization, progression, and cleanup consistently
+     Edge Case: Scene resources not cleaned up, causing memory leaks
+
+  🟡 [MEDIUM] llm_agents/diegetic_momentum_tracker.py
+     Issue: LLM agent file llm_agents/diegetic_momentum_tracker.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/encounter_checker.py
+     Issue: LLM agent file llm_agents/encounter_checker.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/enhanced_narrative_loop.py
+     Issue: LLM agent file llm_agents/enhanced_narrative_loop.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/identity_manager.py
+     Issue: LLM agent file llm_agents/identity_manager.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/narrative_context_system.py
+     Issue: LLM agent file llm_agents/narrative_context_system.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/narrative_loop_system.py
+     Issue: LLM agent file llm_agents/narrative_loop_system.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/nua_context_system.py
+     Issue: LLM agent file llm_agents/nua_context_system.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/scene_manager.py
+     Issue: LLM agent file llm_agents/scene_manager.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/sympathy_initialization.py
+     Issue: LLM agent file llm_agents/sympathy_initialization.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/target_detection_system.py
+     Issue: LLM agent file llm_agents/target_detection_system.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/utas_narrative_formula.py
+     Issue: LLM agent file llm_agents/utas_narrative_formula.py not found
+     Fix: Verify LLM agent implementation
+
+  🟡 [MEDIUM] llm_agents/diegetic_momentum_tracker.py
+     Issue: Diegetic momentum must track narrative pacing across scenes
+     Fix: Ensure momentum carries appropriately between scene transitions
+     Edge Case: Scene transition completely resets narrative momentum
+
+
+【LLM Client】
+  🔴 [CRITICAL] claude_openrouter_proxy.py:16-28
+     Issue: Proxy must load API key from .env, overriding stale environment variables
+     Fix: Force reload from .env on every proxy start
+     Edge Case: Stale API key in environment causes 401 Unauthorized errors
+
+  🟠 [HIGH] openrouter_config.py
+     Issue: LLM client file openrouter_config.py not found
+     Fix: Verify LLM client implementation
+
+  🟠 [HIGH] llm_client.py
+     Issue: LLM client file llm_client.py not found
+     Fix: Verify LLM client implementation
+
+  🟠 [HIGH] claude_openrouter_proxy.py
+     Issue: LLM client file claude_openrouter_proxy.py not found
+     Fix: Verify LLM client implementation
+
+  🟡 [MEDIUM] openrouter_config.py
+     Issue: Different roles require different models for optimal performance
+     Fix: Ensure create_role_client() uses appropriate model per role
+     Edge Case: Using cheap model for complex reasoning causes poor output quality
+
+
+【Layout/Visualizer】
+  🟠 [HIGH] layout_generator.py
+     Issue: Scene layouts must be consistent and navigable
+     Fix: Generate valid spatial layouts with proper exits and boundaries
+     Edge Case: Generated layout has exits leading nowhere or impossible geometry
+
+  🟡 [MEDIUM] layout_generator.py
+     Issue: Layout/Visualizer file layout_generator.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] llm_layout_generator.py
+     Issue: Layout/Visualizer file llm_layout_generator.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] location_distance_tracker.py
+     Issue: Layout/Visualizer file location_distance_tracker.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] location_sizer.py
+     Issue: Layout/Visualizer file location_sizer.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] pygame_spatial_map.py
+     Issue: Layout/Visualizer file pygame_spatial_map.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] rich_spatial_display.py
+     Issue: Layout/Visualizer file rich_spatial_display.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] visualizer_prompt_system.py
+     Issue: Layout/Visualizer file visualizer_prompt_system.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] visualizer_viewer_server.py
+     Issue: Layout/Visualizer file visualizer_viewer_server.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] world_map_visualizer.py
+     Issue: Layout/Visualizer file world_map_visualizer.py not found
+     Fix: Verify layout/visualization implementation
+
+  🟡 [MEDIUM] llm_layout_generator.py
+     Issue: LLM-generated layouts must be parsed and validated
+     Fix: Extract layout data from LLM response and validate structure
+     Edge Case: LLM generates narrative description instead of structured layout data
+
+  🟡 [MEDIUM] pygame_spatial_map.py
+     Issue: Spatial map visualization must reflect actual actor positions
+     Fix: Sync visual map with simulation state in real-time
+     Edge Case: Map shows actors in wrong locations compared to narrative
+
+  🟡 [MEDIUM] location_distance_tracker.py
+     Issue: Distances between locations must be consistent
+     Fix: Track travel distances and times between connected locations
+     Edge Case: City A to B takes 1 hour, but B to A takes 5 hours without reason
+
+  🟡 [MEDIUM] visualizer_prompt_system.py
+     Issue: Visualization prompts must generate era-appropriate imagery
+     Fix: Include 1962-1975 context in image generation prompts
+     Edge Case: Visualizer generates modern cars/clothing for 1960s scene
+
+  🔵 [LOW] location_sizer.py
+     Issue: Location sizes must be appropriate for their type
+     Fix: Generate realistic dimensions for rooms, buildings, outdoor areas
+     Edge Case: Closet sized as 500 square meters
+
+
+【Memory Systems】
+  🟠 [HIGH] intent_based_memory_creation.py
+     Issue: Memory deduplication must handle semantic similarity, not just exact matches
+     Fix: Implement semantic deduplication to prevent 'I met John' and 'I encountered John' as separate memories
+     Edge Case: Without semantic deduplication, similar memories accumulate and clutter the system
+
+  🟡 [MEDIUM] key_memories_system.py
+     Issue: Memory system file key_memories_system.py not found
+     Fix: Verify memory system implementation
+
+  🟡 [MEDIUM] npc_memory_system.py
+     Issue: Memory system file npc_memory_system.py not found
+     Fix: Verify memory system implementation
+
+  🟡 [MEDIUM] automatic_memory_creation.py
+     Issue: Memory system file automatic_memory_creation.py not found
+     Fix: Verify memory system implementation
+
+  🟡 [MEDIUM] intent_based_memory_creation.py
+     Issue: Memory system file intent_based_memory_creation.py not found
+     Fix: Verify memory system implementation
+
+  🟡 [MEDIUM] MAIN/redesigned_main.py
+     Issue: NUA Memory System must be session-scoped
+     Fix: Initialize NUA memory with session-specific storage path
+     Edge Case: Shared storage causes memory leakage between sessions
+     Related: MAIN/redesigned_main.py:8340-8350
+
+
+【Mode Transition】
+  🔵 [LOW] mode_transition_enhancer.py
+     Issue: Mode transition enhancer file not found
+     Fix: Verify mode transition enhancement
+
+
+【Multimedia】
+  🔵 [LOW] fal_image_system.py
+     Issue: Multimedia file fal_image_system.py not found
+     Fix: Verify multimedia implementation if used
+
+  🔵 [LOW] fal_video_system.py
+     Issue: Multimedia file fal_video_system.py not found
+     Fix: Verify multimedia implementation if used
+
+  🔵 [LOW] fal_image_system.py
+     Issue: Image generation must match narrative context
+     Fix: Generate images consistent with scene description and era
+     Edge Case: Generated image shows modern elements in 1960s scene
+
+
+【NUA Management】
+  🟠 [HIGH] nua_life_tracker.py
+     Issue: NUA life state must persist (health, status, location)
+     Fix: Save all NUA state with session and restore consistently
+     Edge Case: Injured NPC fully healed on session resume
+
+  🟡 [MEDIUM] nua_life_tracker.py
+     Issue: NUA management file nua_life_tracker.py not found
+     Fix: Verify NUA management implementation
+
+  🟡 [MEDIUM] nua_introduction_system.py
+     Issue: NUA management file nua_introduction_system.py not found
+     Fix: Verify NUA management implementation
+
+  🟡 [MEDIUM] multi_actor_manager.py
+     Issue: NUA management file multi_actor_manager.py not found
+     Fix: Verify NUA management implementation
+
+  🟡 [MEDIUM] enhanced_sympathy_system.py
+     Issue: NUA management file enhanced_sympathy_system.py not found
+     Fix: Verify NUA management implementation
+
+  🟡 [MEDIUM] nua_introduction_system.py
+     Issue: NUAs must be properly introduced before being referenced
+     Fix: Track which actors have been formally introduced to UA
+     Edge Case: Narrator refers to 'Marcus' before player has been introduced to him
+
+  🟡 [MEDIUM] multi_actor_manager.py
+     Issue: Grouped NUAs must act coherently
+     Fix: Coordinate actions for NUAs in same faction/group
+     Edge Case: Allied NPCs attack each other or ignore group tactics
+
+
+【Narrative Systems】
+  🟠 [HIGH] llm_agents/enhanced_narrative_loop.py
+     Issue: Four-Mode Narrative Loop must be integrated with all narrative generation
+     Fix: Ensure all narrators use narrative_loop.process_turn() for framing
+     Edge Case: Without narrative loop, tone shifts are jarring and inconsistent
+
+  🟡 [MEDIUM] agents/narrator_agent.py:79-125
+     Issue: Sensory narration must start with 'You [perception verb]'
+     Fix: Enforce sentence structure validation in narrative generation
+     Edge Case: Narratives starting with context clauses break immersion: 'As she lifts the shutter, you glimpse...'
+
+  🟡 [MEDIUM] agents/narrator_agent.py:71-76
+     Issue: Scene descriptions must be either interior OR exterior, never both
+     Fix: Validate location type before generating descriptions
+     Edge Case: Descriptions mixing 'room layout' with 'sky and weather' create impossible spaces
+
+
+【Parser/Wrapper】
+  🟠 [HIGH] scene_npc_parser.py
+     Issue: Scene descriptions must be parsed for NPC mentions accurately
+     Fix: Extract NPC names, descriptions, and positions from scene text
+     Edge Case: NPC mentioned in scene but not extracted for interaction
+
+  🟡 [MEDIUM] npc_parser_wrapper.py
+     Issue: Parser/Wrapper file npc_parser_wrapper.py not found
+     Fix: Verify parser/wrapper implementation
+
+  🟡 [MEDIUM] scene_npc_parser.py
+     Issue: Parser/Wrapper file scene_npc_parser.py not found
+     Fix: Verify parser/wrapper implementation
+
+  🟡 [MEDIUM] npc_parser_wrapper.py
+     Issue: NPC parser must handle all response formats consistently
+     Fix: Normalize various NPC data formats to standard structure
+     Edge Case: Different NPC sources produce incompatible data structures
+
+
+【Partial Action】
+  🟠 [HIGH] partial_action_system.py
+     Issue: Partially completed actions must resume correctly
+     Fix: Track progress of long actions and allow resumption after interruption
+     Edge Case: Action interrupted, progress lost, must start from beginning
+
+  🟡 [MEDIUM] partial_action_system.py
+     Issue: Partial action system file not found
+     Fix: Verify partial action implementation for interrupted actions
+
+
+【Population】
+  🟡 [MEDIUM] agents/population_manager.py
+     Issue: Population manager file not found
+     Fix: Verify population management for dynamic NPC spawning
+
+  🟡 [MEDIUM] agents/population_manager.py
+     Issue: Scene population must match location type and time
+     Fix: Busy market has many NPCs at noon, empty at midnight
+     Edge Case: Deserted alley has 20 NPCs at 3 AM
+
+
+【Progression】
+  🟠 [HIGH] progression_tracker.py
+     Issue: Skill progression must track experience and level-ups
+     Fix: Persist skill XP and handle level advancement with appropriate benefits
+     Edge Case: Skills gain XP but never level up; or levels reset on resume
+
+  🟡 [MEDIUM] progression_tracker.py
+     Issue: Progression file progression_tracker.py not found
+     Fix: Verify progression implementation
+
+  🟡 [MEDIUM] skill_revelation_system.py
+     Issue: Progression file skill_revelation_system.py not found
+     Fix: Verify progression implementation
+
+  🟡 [MEDIUM] progression_integration_helper.py
+     Issue: Progression file progression_integration_helper.py not found
+     Fix: Verify progression implementation
+
+  🟡 [MEDIUM] skill_revelation_system.py
+     Issue: Skills must be revealed progressively, not all at once
+     Fix: Show relevant skills based on context and hide undiscovered ones
+     Edge Case: All 50+ skills visible immediately, overwhelming player
+
+
+【RAG System】
+  🟠 [HIGH] WORLD_BUILDER/worldbuilding_rag.py
+     Issue: RAG system file WORLD_BUILDER/worldbuilding_rag.py not found
+     Fix: Verify RAG system implementation
+
+  🟠 [HIGH] WORLD_BUILDER/realitas_lore.py
+     Issue: RAG system file WORLD_BUILDER/realitas_lore.py not found
+     Fix: Verify RAG system implementation
+
+  🟠 [HIGH] rag_lock_utils.py
+     Issue: RAG system file rag_lock_utils.py not found
+     Fix: Verify RAG system implementation
+
+  🟠 [HIGH] WORLD_BUILDER/worldbuilding_rag.py
+     Issue: Actor generation uses separate categories: UA_GENERATION, NUA_GENERATION, INUA_GENERATION
+     Fix: CreatorAgent must use correct category for each actor type
+     Edge Case: Using wrong category causes inappropriate generation (modern skills for 1960s NPC)
+
+  🟡 [MEDIUM] WORLD_BUILDER/realitas_lore.py
+     Issue: Year range (1962-1975) must be consistent across all lore
+     Fix: Ensure YEAR_START, YEAR_END, CURRENT_YEAR are synchronized
+     Edge Case: Inconsistent year ranges cause temporal confusion in generation
+
+  🟡 [MEDIUM] rag_lock_utils.py
+     Issue: RAG queries may hang indefinitely without timeout
+     Fix: Add timeout to get_multi_category_context_for_llm()
+     Edge Case: Deadlock causes simulation to freeze
+
+
+【Recovery System】
+  🟠 [HIGH] json_utils.py
+     Issue: LLM responses may contain malformed JSON
+     Fix: Use extract_and_parse_json() with robust fallback parsing
+     Edge Case: JSON parsing failure crashes action resolution
+
+  🟡 [MEDIUM] recovery_integrator.py
+     Issue: Recovery file recovery_integrator.py not found
+     Fix: Verify recovery system implementation
+
+  🟡 [MEDIUM] json_utils.py
+     Issue: Recovery file json_utils.py not found
+     Fix: Verify recovery system implementation
+
+  🟡 [MEDIUM] recovery_integrator.py
+     Issue: Recovery integrator must restore consistent state after errors
+     Fix: Validate all state components after recovery
+     Edge Case: Partial recovery leaves system in inconsistent state
+
+
+【Reputation System】
+  🟠 [HIGH] reputation_system.py
+     Issue: Reputation system file not found
+     Fix: Verify reputation system for NPC faction tracking
+
+  🟠 [HIGH] reputation_system.py
+     Issue: Reputation must persist across sessions
+     Fix: Save faction standings and reputation values with world state
+     Edge Case: NPCs forget player reputation after session resume
+
+  🟡 [MEDIUM] reputation_system.py
+     Issue: Reputation must affect NPC behavior and availability
+     Fix: High reputation unlocks favors; low reputation causes hostility
+     Edge Case: Infamous player treated same as unknown stranger
+
+
+【Rule of 3s】
+  🟡 [MEDIUM] rule_of_3s.py
+     Issue: Rule of 3s system file not found
+     Fix: Verify Rule of 3s implementation for narrative flow
+
+  🟡 [MEDIUM] agents/interpreter_agent.py
+     Issue: RuleOf3Classifier must categorize actions correctly
+     Fix: Validate classification: Setup, Escalation, Climax, Resolution
+     Edge Case: Misclassified actions disrupt narrative pacing and flow
+
+  🟡 [MEDIUM] rule_of_3s.py
+     Issue: RuleOf3TransitionManager must track narrative progression
+     Fix: Ensure transitions follow proper narrative arc
+     Edge Case: Skipping from Setup to Resolution without Escalation/Climax
+
+
+【Save/Pronoun】
+  🟠 [HIGH] save_coordinator.py
+     Issue: Save/pronoun file save_coordinator.py not found
+     Fix: Verify save/pronoun implementation
+
+  🟠 [HIGH] pronoun_resolution.py
+     Issue: Save/pronoun file pronoun_resolution.py not found
+     Fix: Verify save/pronoun implementation
+
+  🟠 [HIGH] save_coordinator.py
+     Issue: Save/load must preserve all system states consistently
+     Fix: Ensure all systems (time, context, NUA state, inventory) save together
+     Edge Case: Partial save causes state mismatch - context shows scene A but NUA positions from scene B
+
+  🟡 [MEDIUM] pronoun_resolution.py
+     Issue: Pronouns must resolve correctly to intended referents
+     Fix: Use context and recent mentions to disambiguate 'he/she/they'
+     Edge Case: 'I attack him' targets wrong person when multiple males present
+
+  🔵 [LOW] pronoun_resolution.py
+     Issue: Third-person narration must not leak into first-person internal voice
+     Fix: Filter and convert pronouns appropriately for each output type
+     Edge Case: Internal voice refers to UA as 'he' instead of 'you'
+
+
+【Sensory System】
+  🟠 [HIGH] sensory_constants.py
+     Issue: Sensory perception must be distance-aware
+     Fix: Use get_sensory_rules_for_distance() to validate what can be perceived
+     Edge Case: Characters hear whispers from 100 units away, see facial expressions at extreme distances
+
+  🟡 [MEDIUM] sensory_constants.py
+     Issue: Sensory constants file not found
+     Fix: Verify sensory system implementation
+
+  🟡 [MEDIUM] agents/narrator_agent.py
+     Issue: Narratives must respect sensory constraints in descriptions
+     Fix: Filter sensory details based on actor distance and perception capabilities
+     Edge Case: Narrator describes facial expressions of actors 500 units distant
+
+
+【Spatial/Location】
+  🟠 [HIGH] sensing_bubble_system.py
+     Issue: Sensing bubble must filter perceivable actors/objects by distance
+     Fix: Only actors within perception range should be visible/narratable
+     Edge Case: Actors 500m away appear in scene description as clearly visible
+
+  🟡 [MEDIUM] sensing_bubble_system.py
+     Issue: Spatial file sensing_bubble_system.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] scene_population_system.py
+     Issue: Spatial file scene_population_system.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] spatial_layout_graph.py
+     Issue: Spatial file spatial_layout_graph.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] spatial_location_analyzer.py
+     Issue: Spatial file spatial_location_analyzer.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] spatial_movement_detector.py
+     Issue: Spatial file spatial_movement_detector.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] spatial_position_resolver.py
+     Issue: Spatial file spatial_position_resolver.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] location_distance_tracker.py
+     Issue: Spatial file location_distance_tracker.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] location_sizer.py
+     Issue: Spatial file location_sizer.py not found
+     Fix: Verify spatial/location implementation
+
+  🟡 [MEDIUM] spatial_movement_detector.py
+     Issue: Spatial movements must be detected and narrated
+     Fix: Track actor position changes and generate appropriate narratives
+     Edge Case: Actors teleport without narration when moving between locations
+
+  🟡 [MEDIUM] spatial_layout_graph.py
+     Issue: Scene layout must be internally consistent
+     Fix: Validate spatial relationships (exits, distances, adjacencies)
+     Edge Case: Room has exit to kitchen but kitchen doesn't have exit back
+
+  🔵 [LOW] journey_chunking_system.py
+     Issue: Long journeys must be chunked into narrative segments
+     Fix: Break travel into manageable narrative chunks with key moments
+     Edge Case: 3-hour journey described in one paragraph without intermediate details
+
+
+【Survival/Witness】
+  🟡 [MEDIUM] survival_system.py
+     Issue: Survival stats (hunger, thirst, fatigue) must affect gameplay
+     Fix: Degraded stats should limit available actions and affect narrative
+     Edge Case: Starving character runs marathons without consequence
+
+  🟡 [MEDIUM] witness_reaction_system.py
+     Issue: Witnesses must react realistically to events
+     Fix: Observers react based on personality, sympathy, and situation
+     Edge Case: Crowd watches violence without reaction; friends ignore player distress
+
+  🔵 [LOW] survival_system.py
+     Issue: Survival/witness file survival_system.py not found
+     Fix: Verify survival/witness implementation
+
+  🔵 [LOW] survival_actions.py
+     Issue: Survival/witness file survival_actions.py not found
+     Fix: Verify survival/witness implementation
+
+  🔵 [LOW] survival_action_analyzer.py
+     Issue: Survival/witness file survival_action_analyzer.py not found
+     Fix: Verify survival/witness implementation
+
+  🔵 [LOW] witness_reaction_system.py
+     Issue: Survival/witness file witness_reaction_system.py not found
+     Fix: Verify survival/witness implementation
+
+  🔵 [LOW] stranger_description_system.py
+     Issue: Survival/witness file stranger_description_system.py not found
+     Fix: Verify survival/witness implementation
+
+  🔵 [LOW] stranger_description_system.py
+     Issue: Strangers should have memorable distinguishing features
+     Fix: Generate consistent physical/personality descriptors for unknown NPCs
+     Edge Case: Every stranger described as 'average-looking man in plain clothes'
+
+
+【Tactical System】
+  🟡 [MEDIUM] ally_coordinator.py
+     Issue: Allied NUAs must coordinate actions intelligently
+     Fix: Ensure ally_coordinator considers group tactics and positioning
+     Edge Case: Allies act independently without considering team strategy
+
+  🟡 [MEDIUM] sympathy_behavior_modifier.py
+     Issue: Sympathy levels must affect tactical decisions
+     Fix: High sympathy allies should prioritize player protection; hostile should exploit weaknesses
+     Edge Case: Friendly NPCs act indifferent in combat; enemies act merciful
+
+  🔵 [LOW] tactical_awareness_system.py
+     Issue: Tactical file tactical_awareness_system.py not found
+     Fix: Verify tactical system if used
+
+  🔵 [LOW] ally_coordinator.py
+     Issue: Tactical file ally_coordinator.py not found
+     Fix: Verify tactical system if used
+
+  🔵 [LOW] sympathy_behavior_modifier.py
+     Issue: Tactical file sympathy_behavior_modifier.py not found
+     Fix: Verify tactical system if used
+
+
+【Time/Progression】
+  🟠 [HIGH] master_time_coordinator.py
+     Issue: Simulation time must persist across sessions
+     Fix: Save current time with session and restore on load
+     Edge Case: Time resets to start when resuming, breaking schedules
+
+  🟡 [MEDIUM] master_time_coordinator.py
+     Issue: Time file master_time_coordinator.py not found
+     Fix: Verify time/progression implementation
+
+  🟡 [MEDIUM] simulation_time_tracker.py
+     Issue: Time file simulation_time_tracker.py not found
+     Fix: Verify time/progression implementation
+
+  🟡 [MEDIUM] time_cycle_system.py
+     Issue: Time file time_cycle_system.py not found
+     Fix: Verify time/progression implementation
+
+  🟡 [MEDIUM] reactor_time_system.py
+     Issue: Time file reactor_time_system.py not found
+     Fix: Verify time/progression implementation
+
+  🟡 [MEDIUM] simulation_time_tracker.py
+     Issue: NPC schedules must respect simulation time
+     Fix: Update NPC locations/activities based on current time
+     Edge Case: NPCs appear at wrong locations because time didn't advance
+
+  🔵 [LOW] time_lighting_updater.py
+     Issue: Scene lighting must update with time of day
+     Fix: Adjust narrative descriptions based on time (dawn, noon, dusk, night)
+     Edge Case: Scene described as 'sunlit' at 2 AM
+
+
+【Tone/Severity Validation】
+  🟡 [MEDIUM] tone_consistency_validator.py
+     Issue: Narrative tone must be consistent within scenes
+     Fix: Validate tone matches scene type (tense combat vs peaceful conversation)
+     Edge Case: Casual banter during life-or-death combat, grim descriptions during tea party
+
+  🟡 [MEDIUM] severity_validation.py
+     Issue: Action severity must match outcome severity
+     Fix: Validate that minor actions don't cause catastrophic results (and vice versa)
+     Edge Case: 'Push gently' causes broken bones; 'full punch' causes no injury
+
+  🔵 [LOW] tone_consistency_validator.py
+     Issue: Tone/severity file tone_consistency_validator.py not found
+     Fix: Verify tone/severity validation implementation
+
+  🔵 [LOW] severity_validation.py
+     Issue: Tone/severity file severity_validation.py not found
+     Fix: Verify tone/severity validation implementation
+
+
+【Trivial】
+  🔵 [LOW] color_utils.py
+     Issue: Color utils file not found
+     Fix: Verify color utility functions for display
+
+  🔵 [LOW] config.py
+     Issue: Config file not found
+     Fix: Verify configuration management
+
+  🔵 [LOW] label_utils.py
+     Issue: Label utils file not found
+     Fix: Verify label/text formatting utilities
+
+  🔵 [LOW] numeric_utils.py
+     Issue: Numeric utils file not found
+     Fix: Verify numeric calculation utilities
+
+  🔵 [LOW] config.py
+     Issue: Configuration must be loaded consistently across all systems
+     Fix: Centralize config loading to avoid inconsistent settings
+     Edge Case: Different systems use different default values for same setting
+
+
+【Utility/Helpers】
+  🟡 [MEDIUM] action_type_detector.py
+     Issue: Action type detector file not found
+     Fix: Verify action classification implementation
+
+  🟡 [MEDIUM] context_injection_helper.py
+     Issue: Context injection helper file not found
+     Fix: Verify context injection for LLM prompts
+
+  🟡 [MEDIUM] dynamic_actor_justification.py
+     Issue: Dynamic actor justification file not found
+     Fix: Verify actor spawn justification logic
+
+  🟡 [MEDIUM] narrative_utils.py
+     Issue: Narrative utils file not found
+     Fix: Verify narrative utility functions
+
+  🟡 [MEDIUM] economic_awareness_enhancer.py
+     Issue: Economic awareness enhancer file not found
+     Fix: Verify economic context enhancement
+
+  🟡 [MEDIUM] unified_formula.py
+     Issue: Unified formula file not found
+     Fix: Verify action resolution formula
+
+  🟡 [MEDIUM] agents/spatial_context_helper.py
+     Issue: Spatial context helper file not found
+     Fix: Verify spatial context utility functions
+
+  🔵 [LOW] do_nothing_action.py
+     Issue: Do nothing action file not found
+     Fix: Verify pass/skip action handling
+
+  🔵 [LOW] outlier_stats_display.py
+     Issue: Outlier stats display file not found
+     Fix: Verify statistics display for debugging
+
+  🔵 [LOW] storage_utils.py
+     Issue: Storage utils file not found
+     Fix: Verify storage utility functions
+
+  🔵 [LOW] object_registry.py
+     Issue: Object registry file not found
+     Fix: Verify object registration system
+
+  🔵 [LOW] supply_utils.py
+     Issue: Supply utils file not found
+     Fix: Verify supply/cargo management utilities
+
+  🔵 [LOW] llm_agents/scene_event_scheduler.py
+     Issue: Scene event scheduler file not found
+     Fix: Verify scene event scheduling
+
+
+【Validation Systems】
+  🟠 [HIGH] scene_continuity_validator.py
+     Issue: All actions must pass continuity validation before execution
+     Fix: Integrate continuity_validator.validate_narrative() at action entry points
+     Edge Case: Actions violating location constraints or NPC presence execute without warning
+
+  🟡 [MEDIUM] sensory_constants.py
+     Issue: Narratives must respect sensory constraints based on distance
+     Fix: Validate narratives against get_sensory_rules_for_distance()
+     Edge Case: Whispers audible at 50 units, facial expressions visible at 100 units
+
+  🟡 [MEDIUM] agents/creator_agent.py
+     Issue: Mode B validation may hard-fail character generation
+     Fix: Set REALITAS_MODE_B_VALIDATION=0 by default to prevent startup crashes
+     Edge Case: RAG vocab mismatches cause character creation to fail completely
+
+
+【Vessel Selection】
+  🟡 [MEDIUM] vessel_selection_system.py
+     Issue: Vessel selection file not found
+     Fix: Verify vessel selection for action resolution
+
+  🟡 [MEDIUM] vessel_selection_system.py
+     Issue: Vessel terminology must be consistent (Hand/Foot/Mouth/Mind)
+     Fix: Use standard vessel categories consistently across all actions
+     Edge Case: Mixing 'Hand' and 'Fist' as separate vessels inconsistently
+
+
+【World Persistence】
+  🟡 [MEDIUM] world_persistence_system.py
+     Issue: World persistence file not found
+     Fix: Verify world persistence implementation
+
+  🟡 [MEDIUM] world_persistence_system.py
+     Issue: NPC reputation/faction standing must persist across sessions
+     Fix: Save reputation data with session and restore on load
+     Edge Case: NPCs forget player reputation after session resume
+
+  🟡 [MEDIUM] world_persistence_system.py
+     Issue: NPC schedules and world aftermath must be preserved
+     Fix: Serialize schedule_state and aftermath data
+     Edge Case: World returns to initial state ignoring player actions
+
+
+【World-Spatial Integration】
+  🟡 [MEDIUM] world_spatial_integration.py
+     Issue: World-spatial integration file not found
+     Fix: Verify world-spatial integration for global location management
+
+  🟡 [MEDIUM] world_spatial_integration.py
+     Issue: World map and local scenes must be consistent
+     Fix: Ensure travel between locations updates both world and spatial contexts
+     Edge Case: Player travels to city A in world map but scene shows city B
+
+======================================================================
+Review Complete.
+======================================================================
+
+💾 Report saved to: C:\Users\darre\OneDrive\Desktop\Realitas Neo\realitas_review_report.json

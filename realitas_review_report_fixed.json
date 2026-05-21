@@ -1,0 +1,1323 @@
+{
+  "critical": 6,
+  "high": 38,
+  "medium": 88,
+  "low": 11,
+  "findings": [
+    {
+      "category": "Agent Architecture",
+      "severity": "INFO",
+      "location": "agents/*",
+      "issue": "Agent initialization pattern validation",
+      "recommendation": "Ensure all agents receive: logger, rag_system, tracker_agent, scene_description via __init__",
+      "edge_case": "Agents initialized without RAG will lack worldbuilding context, causing anachronisms",
+      "related_files": []
+    },
+    {
+      "category": "Agent Architecture",
+      "severity": "MEDIUM",
+      "location": "agents/",
+      "issue": "Potential circular import risk between Conductor and child agents",
+      "recommendation": "Use TYPE_CHECKING imports for type hints; import at runtime only when needed",
+      "edge_case": "Import loops can cause initialization failures when systems are partially loaded",
+      "related_files": []
+    },
+    {
+      "category": "Context Systems",
+      "severity": "CRITICAL",
+      "location": "MAIN/redesigned_main.py",
+      "issue": "Session ID must be consistent across all context managers",
+      "recommendation": "Initialize context_manager AFTER tracker session is created/loaded, using tracker.session_id",
+      "edge_case": "If context_manager is initialized before tracker, it uses a new UUID instead of the saved session ID, breaking continuity",
+      "related_files": [
+        "MAIN/redesigned_main.py:8300-8320",
+        "persistent_context_manager.py"
+      ]
+    },
+    {
+      "category": "Context Systems",
+      "severity": "HIGH",
+      "location": "agents/interpreter_agent.py",
+      "issue": "Spatial context must use correct session ID for continuity checks",
+      "recommendation": "InterpreterAgent should use tracker.session_id for spatial checks, not 'default'",
+      "edge_case": "Using 'default' session causes all spatial continuity checks to fail on session resume",
+      "related_files": [
+        "agents/interpreter_agent.py:90-109",
+        "spatial_context_system.py"
+      ]
+    },
+    {
+      "category": "Memory Systems",
+      "severity": "HIGH",
+      "location": "intent_based_memory_creation.py",
+      "issue": "Memory deduplication must handle semantic similarity, not just exact matches",
+      "recommendation": "Implement semantic deduplication to prevent 'I met John' and 'I encountered John' as separate memories",
+      "edge_case": "Without semantic deduplication, similar memories accumulate and clutter the system",
+      "related_files": []
+    },
+    {
+      "category": "Memory Systems",
+      "severity": "MEDIUM",
+      "location": "MAIN/redesigned_main.py",
+      "issue": "NUA Memory System must be session-scoped",
+      "recommendation": "Initialize NUA memory with session-specific storage path",
+      "edge_case": "Shared storage causes memory leakage between sessions",
+      "related_files": [
+        "MAIN/redesigned_main.py:8340-8350"
+      ]
+    },
+    {
+      "category": "Actor Systems",
+      "severity": "CRITICAL",
+      "location": "dynamic_actor_system.py:72-80",
+      "issue": "Existing actor reference detection uses overly aggressive partial matching",
+      "recommendation": "Replace word-level partial matching with phrase-level matching or require exact substring",
+      "edge_case": "Input 'I talk to the guard' matches existing actor 'Security Guard' because 'guard' is in both, blocking NUA detection",
+      "related_files": [
+        "dynamic_actor_system.py",
+        "agents/interpreter_agent.py"
+      ]
+    },
+    {
+      "category": "Actor Systems",
+      "severity": "MEDIUM",
+      "location": "actors.py",
+      "issue": "Actor category (UA/NUA/MNUA/INUA) must be preserved across save/load",
+      "recommendation": "Ensure category enum is serialized and restored correctly",
+      "edge_case": "Category loss causes actors to default to wrong behavior patterns",
+      "related_files": []
+    },
+    {
+      "category": "Actor Systems",
+      "severity": "MEDIUM",
+      "location": "llm_agents/sympathy_initialization.py",
+      "issue": "Newly encountered NPCs may default to neutral sympathy despite context",
+      "recommendation": "Pass recent narrative context (lookback=15) to assign_initial_sympathies",
+      "edge_case": "Phone call with 'best friend' initializes as neutral instead of friendly",
+      "related_files": [
+        "llm_agents/sympathy_initialization.py",
+        "MAIN/redesigned_main.py"
+      ]
+    },
+    {
+      "category": "Narrative Systems",
+      "severity": "MEDIUM",
+      "location": "agents/narrator_agent.py:79-125",
+      "issue": "Sensory narration must start with 'You [perception verb]'",
+      "recommendation": "Enforce sentence structure validation in narrative generation",
+      "edge_case": "Narratives starting with context clauses break immersion: 'As she lifts the shutter, you glimpse...'",
+      "related_files": []
+    },
+    {
+      "category": "Narrative Systems",
+      "severity": "MEDIUM",
+      "location": "agents/narrator_agent.py:71-76",
+      "issue": "Scene descriptions must be either interior OR exterior, never both",
+      "recommendation": "Validate location type before generating descriptions",
+      "edge_case": "Descriptions mixing 'room layout' with 'sky and weather' create impossible spaces",
+      "related_files": []
+    },
+    {
+      "category": "Narrative Systems",
+      "severity": "HIGH",
+      "location": "llm_agents/enhanced_narrative_loop.py",
+      "issue": "Four-Mode Narrative Loop must be integrated with all narrative generation",
+      "recommendation": "Ensure all narrators use narrative_loop.process_turn() for framing",
+      "edge_case": "Without narrative loop, tone shifts are jarring and inconsistent",
+      "related_files": []
+    },
+    {
+      "category": "Exchange Systems",
+      "severity": "CRITICAL",
+      "location": "MAIN/redesigned_main.py:19630-19660",
+      "issue": "Remote encounters (phone calls) must constrain actions to non-physical",
+      "recommendation": "Add remote_constraint to context_guidance forbidding physical actions",
+      "edge_case": "NUA may generate 'approaches you' actions during phone calls, which is physically impossible",
+      "related_files": [
+        "MAIN/redesigned_main.py",
+        "agents/decider_agent.py"
+      ]
+    },
+    {
+      "category": "Exchange Systems",
+      "severity": "HIGH",
+      "location": "MAIN/redesigned_main.py:19685-19860",
+      "issue": "NUA proactions must be validated for continuity before execution",
+      "recommendation": "Implement retry loop with continuity feedback for failed validations",
+      "edge_case": "NUA generates impossible actions (approaching during phone call) without validation",
+      "related_files": []
+    },
+    {
+      "category": "Exchange Systems",
+      "severity": "MEDIUM",
+      "location": "encounter_checker.py",
+      "issue": "Turn queue position must advance correctly after each action",
+      "recommendation": "Verify round_manager.advance_turn_queue() is called consistently",
+      "edge_case": "Skipped advancement causes same actor to act twice",
+      "related_files": []
+    },
+    {
+      "category": "Validation Systems",
+      "severity": "HIGH",
+      "location": "scene_continuity_validator.py",
+      "issue": "All actions must pass continuity validation before execution",
+      "recommendation": "Integrate continuity_validator.validate_narrative() at action entry points",
+      "edge_case": "Actions violating location constraints or NPC presence execute without warning",
+      "related_files": []
+    },
+    {
+      "category": "Validation Systems",
+      "severity": "MEDIUM",
+      "location": "sensory_constants.py",
+      "issue": "Narratives must respect sensory constraints based on distance",
+      "recommendation": "Validate narratives against get_sensory_rules_for_distance()",
+      "edge_case": "Whispers audible at 50 units, facial expressions visible at 100 units",
+      "related_files": []
+    },
+    {
+      "category": "Validation Systems",
+      "severity": "MEDIUM",
+      "location": "agents/creator_agent.py",
+      "issue": "Mode B validation may hard-fail character generation",
+      "recommendation": "Set REALITAS_MODE_B_VALIDATION=0 by default to prevent startup crashes",
+      "edge_case": "RAG vocab mismatches cause character creation to fail completely",
+      "related_files": []
+    },
+    {
+      "category": "RAG System",
+      "severity": "MEDIUM",
+      "location": "WORLD_BUILDER/realitas_lore.py",
+      "issue": "Year range (1962-1975) must be consistent across all lore",
+      "recommendation": "Ensure YEAR_START, YEAR_END, CURRENT_YEAR are synchronized",
+      "edge_case": "Inconsistent year ranges cause temporal confusion in generation",
+      "related_files": []
+    },
+    {
+      "category": "RAG System",
+      "severity": "HIGH",
+      "location": "WORLD_BUILDER/worldbuilding_rag.py",
+      "issue": "Actor generation uses separate categories: UA_GENERATION, NUA_GENERATION, INUA_GENERATION",
+      "recommendation": "CreatorAgent must use correct category for each actor type",
+      "edge_case": "Using wrong category causes inappropriate generation (modern skills for 1960s NPC)",
+      "related_files": []
+    },
+    {
+      "category": "RAG System",
+      "severity": "MEDIUM",
+      "location": "rag_lock_utils.py",
+      "issue": "RAG queries may hang indefinitely without timeout",
+      "recommendation": "Add timeout to get_multi_category_context_for_llm()",
+      "edge_case": "Deadlock causes simulation to freeze",
+      "related_files": []
+    },
+    {
+      "category": "LLM Client",
+      "severity": "HIGH",
+      "location": "llm_client.py",
+      "issue": "LLM client file llm_client.py not found",
+      "recommendation": "Verify LLM client implementation",
+      "edge_case": null,
+      "related_files": []
+    },
+    {
+      "category": "LLM Client",
+      "severity": "MEDIUM",
+      "location": "openrouter_config.py",
+      "issue": "Different roles require different models for optimal performance",
+      "recommendation": "Ensure create_role_client() uses appropriate model per role",
+      "edge_case": "Using cheap model for complex reasoning causes poor output quality",
+      "related_files": []
+    },
+    {
+      "category": "LLM Client",
+      "severity": "CRITICAL",
+      "location": "claude_openrouter_proxy.py:16-28",
+      "issue": "Proxy must load API key from .env, overriding stale environment variables",
+      "recommendation": "Force reload from .env on every proxy start",
+      "edge_case": "Stale API key in environment causes 401 Unauthorized errors",
+      "related_files": []
+    },
+    {
+      "category": "Sensory System",
+      "severity": "HIGH",
+      "location": "sensory_constants.py",
+      "issue": "Sensory perception must be distance-aware",
+      "recommendation": "Use get_sensory_rules_for_distance() to validate what can be perceived",
+      "edge_case": "Characters hear whispers from 100 units away, see facial expressions at extreme distances",
+      "related_files": []
+    },
+    {
+      "category": "Sensory System",
+      "severity": "MEDIUM",
+      "location": "agents/narrator_agent.py",
+      "issue": "Narratives must respect sensory constraints in descriptions",
+      "recommendation": "Filter sensory details based on actor distance and perception capabilities",
+      "edge_case": "Narrator describes facial expressions of actors 500 units distant",
+      "related_files": []
+    },
+    {
+      "category": "Dialogue System",
+      "severity": "LOW",
+      "location": "agents/dialogue_agent.py",
+      "issue": "Dialogue file agents/dialogue_agent.py not found",
+      "recommendation": "Verify dialogue system implementation if used",
+      "edge_case": null,
+      "related_files": []
+    },
+    {
+      "category": "Dialogue System",
+      "severity": "MEDIUM",
+      "location": "dialogue_context_system.py",
+      "issue": "Dialogue context must persist across turns",
+      "recommendation": "Ensure dialogue history is saved to session storage",
+      "edge_case": "Lost context causes NPCs to forget conversation thread mid-dialogue",
+      "related_files": []
+    },
+    {
+      "category": "Tactical System",
+      "severity": "LOW",
+      "location": "ally_coordinator.py",
+      "issue": "Tactical file ally_coordinator.py not found",
+      "recommendation": "Verify tactical system if used",
+      "edge_case": null,
+      "related_files": []
+    },
+    {
+      "category": "Tactical System",
+      "severity": "MEDIUM",
+      "location": "ally_coordinator.py",
+      "issue": "Allied NUAs must coordinate actions intelligently",
+      "recommendation": "Ensure ally_coordinator considers group tactics and positioning",
+      "edge_case": "Allies act independently without considering team strategy",
+      "related_files": []
+    },
+    {
+      "category": "Tactical System",
+      "severity": "MEDIUM",
+      "location": "sympathy_behavior_modifier.py",
+      "issue": "Sympathy levels must affect tactical decisions",
+      "recommendation": "High sympathy allies should prioritize player protection; hostile should exploit weaknesses",
+      "edge_case": "Friendly NPCs act indifferent in combat; enemies act merciful",
+      "related_files": []
+    },
+    {
+      "category": "Rule of 3s",
+      "severity": "MEDIUM",
+      "location": "agents/interpreter_agent.py",
+      "issue": "RuleOf3Classifier must categorize actions correctly",
+      "recommendation": "Validate classification: Setup, Escalation, Climax, Resolution",
+      "edge_case": "Misclassified actions disrupt narrative pacing and flow",
+      "related_files": []
+    },
+    {
+      "category": "Rule of 3s",
+      "severity": "MEDIUM",
+      "location": "rule_of_3s.py",
+      "issue": "RuleOf3TransitionManager must track narrative progression",
+      "recommendation": "Ensure transitions follow proper narrative arc",
+      "edge_case": "Skipping from Setup to Resolution without Escalation/Climax",
+      "related_files": []
+    },
+    {
+      "category": "Initiative System",
+      "severity": "MEDIUM",
+      "location": "round_manager.py",
+      "issue": "Initiative file round_manager.py not found",
+      "recommendation": "Verify initiative system implementation",
+      "edge_case": null,
+      "related_files": []
+    },
+    {
+      "category": "Initiative System",
+      "severity": "HIGH",
+      "location": "initiative_system.py",
+      "issue": "Initiative rolls must determine turn order correctly",
+      "recommendation": "Sort by initiative score descending; ties broken by actor type/attribute",
+      "edge_case": "Wrong turn order causes actors to act before they should",
+      "related_files": []
+    },
+    {
+      "category": "Initiative System",
+      "severity": "MEDIUM",
+      "location": "round_manager.py",
+      "issue": "Turn queue must advance correctly after each action",
+      "recommendation": "Call advance_turn_queue() consistently after action resolution",
+      "edge_case": "Double-advancement or skipped advancement breaks turn flow",
+      "related_files": []
+    },
+    {
+      "category": "Recovery System",
+      "severity": "MEDIUM",
+      "location": "recovery_integrator.py",
+      "issue": "Recovery file recovery_integrator.py not found",
+      "recommendation": "Verify recovery system implementation",
+      "edge_case": null,
+      "related_files": []
+    },
+    {
+      "category": "Recovery System",
+      "severity": "HIGH",
+      "location": "json_utils.py",
+      "issue": "LLM responses may contain malformed JSON",
+      "recommendation": "Use extract_and_parse_json() with robust fallback parsing",
+      "edge_case": "JSON parsing failure crashes action resolution",
+      "related_files": []
+    },
+    {
+      "category": "Recovery System",
+      "severity": "MEDIUM",
+      "location": "recovery_integrator.py",
+      "issue": "Recovery integrator must restore consistent state after errors",
+      "recommendation": "Validate all state components after recovery",
+      "edge_case": "Partial recovery leaves system in inconsistent state",
+      "related_files": []
+    },
+    {
+      "category": "World Persistence",
+      "severity": "MEDIUM",
+      "location": "world_persistence_system.py",
+      "issue": "NPC reputation/faction standing must persist across sessions",
+      "recommendation": "Save reputation data with session and restore on load",
+      "edge_case": "NPCs forget player reputation after session resume",
+      "related_files": []
+    },
+    {
+      "category": "World Persistence",
+      "severity": "MEDIUM",
+      "location": "world_persistence_system.py",
+      "issue": "NPC schedules and world aftermath must be preserved",
+      "recommendation": "Serialize schedule_state and aftermath data",
+      "edge_case": "World returns to initial state ignoring player actions",
+      "related_files": []
+    },
+    {
+      "category": "Encounter System",
+      "severity": "HIGH",
+      "location": "enhanced_dynamic_actor_detector.py",
+      "issue": "Encounter file enhanced_dynamic_actor_detector.py not found",
+      "recommendation": "Verify encounter system implementation",
+      "edge_case": null,
+      "related_files": []
+    },
+    {
+      "category": "Encounter System",
+      "severity": "HIGH",
+      "location": "target_detector.py",
+      "issue": "Encounter file target_detector.py not found",
+      "recommendation": "Verify encounter system implementation",
+      "edge_case": null,
+      "related_files": []
+    },
+    {
+      "category": "Encounter System",
+      "severity": "HIGH",
+      "location": "enhanced_dynamic_actor_detector.py",
+      "issue": "Dynamic actor detection must distinguish new vs existing actors",
+      "recommendation": "Use EnhancedDynamicActorDetector with proper context",
+      "edge_case": "New actors misidentified as existing; existing actors spawn duplicates",
+      "related_files": []
+    },
+    {
+      "category": "Encounter System",
+      "severity": "MEDIUM",
+      "location": "target_detector.py",
+      "issue": "Target detection must resolve ambiguous references",
+      "recommendation": "Use pronoun resolution and context disambiguation",
+      "edge_case": "'I attack him' when multiple males present - which one?",
+      "related_files": []
+    },
+    {
+      "category": "Encounter System",
+      "severity": "MEDIUM",
+      "location": "encounter_checker.py",
+      "issue": "Encounter state must be validated before each turn",
+      "recommendation": "Check active actors, turn queue, and scene consistency",
+      "edge_case": "Stale encounter state causes actions on absent actors",
+      "related_files": []
+    },
+    {
+      "category": "Inquiry System",
+      "severity": "HIGH",
+      "location": "inquiry_system.py",
+      "issue": "Inquiries must respect intent availability - only available intents can be inquired",
+      "recommendation": "Integrate intent_availability_system with inquiry generation",
+      "edge_case": "Player inquires about unavailable intents, gets impossible answers",
+      "related_files": []
+    },
+    {
+      "category": "Inquiry System",
+      "severity": "MEDIUM",
+      "location": "inquiry_system.py",
+      "issue": "Inquiries must be classified as Fact vs Thought",
+      "recommendation": "Use consistent classification: Facts (objective) vs Thoughts (subjective/internal)",
+      "edge_case": "Confused classification causes wrong response format",
+      "related_files": []
+    },
+    {
+      "category": "Inquiry System",
+      "severity": "MEDIUM",
+      "location": "inquiry_generation_order.py",
+      "issue": "Inquiry generation order affects narrative flow",
+      "recommendation": "Ensure inquiries are generated at correct step in turn sequence",
+      "edge_case": "Inquiries generated too early/late break narrative timing",
+      "related_files": []
+    },
+    {
+      "category": "Internal Voice",
+      "severity": "HIGH",
+      "location": "internal_voice_system.py",
+      "issue": "Internal voice must use period-appropriate language (1962-1975)",
+      "recommendation": "Use RAG context to validate all terminology against era",
+      "edge_case": "Character thinks using modern terms like 'smartphone' or 'WiFi' in 1960s",
+      "related_files": []
+    },
+    {
+      "category": "Internal Voice",
+      "severity": "MEDIUM",
+      "location": "agents/narrator_agent.py",
+      "issue": "Internal voice must be clearly separated from narrative output",
+      "recommendation": "Use distinct formatting/branding for internal voice vs narrator descriptions",
+      "edge_case": "Player cannot distinguish between their thoughts and narrator's descriptions",
+      "related_files": []
+    },
+    {
+      "category": "Internal Voice",
+      "severity": "MEDIUM",
+      "location": "internal_voice_system.py",
+      "issue": "Internal voice should suggest, not instruct",
+      "recommendation": "Internal voice is UA's own thoughts - assistant role, not commanding player",
+      "edge_case": "Internal voice gives commands instead of observations, breaking immersion",
+      "related_files": []
+    },
+    {
+      "category": "Goal/Task System",
+      "severity": "HIGH",
+      "location": "goal_task_system.py",
+      "issue": "Goals and tasks must persist across sessions",
+      "recommendation": "Save goal state with session data and restore on resume",
+      "edge_case": "Player's goals reset to empty on session resume",
+      "related_files": []
+    },
+    {
+      "category": "Goal/Task System",
+      "severity": "MEDIUM",
+      "location": "goal_progress_tracker.py",
+      "issue": "Progress tracking must update based on action outcomes",
+      "recommendation": "Integrate with InterpreterAgent to detect goal-relevant actions",
+      "edge_case": "Actions that advance goals don't update progress",
+      "related_files": []
+    },
+    {
+      "category": "Goal/Task System",
+      "severity": "MEDIUM",
+      "location": "goal_task_system.py",
+      "issue": "Goals must have spark types and urgency levels",
+      "recommendation": "Classify goals as Urgent, Important, or Opportunistic with appropriate sparks",
+      "edge_case": "All goals treated equally regardless of urgency, causing focus issues",
+      "related_files": []
+    },
+    {
+      "category": "Intent Availability",
+      "severity": "HIGH",
+      "location": "intent_availability_system.py",
+      "issue": "Intent availability must be context-sensitive",
+      "recommendation": "Combat intents unavailable during peaceful scenes, social intents unavailable in combat",
+      "edge_case": "Player offered 'Attack' intent during friendly conversation",
+      "related_files": []
+    },
+    {
+      "category": "Intent Availability",
+      "severity": "MEDIUM",
+      "location": "intent_availability_system.py",
+      "issue": "Unavailable intents should have diegetic (in-world) explanations",
+      "recommendation": "Explain WHY intent is unavailable using narrative context",
+      "edge_case": "Generic 'not available' messages break immersion",
+      "related_files": []
+    },
+    {
+      "category": "Intent Availability",
+      "severity": "MEDIUM",
+      "location": "inquiry_system.py",
+      "issue": "Inquiries must only be available for available intents",
+      "recommendation": "Filter inquiry generation based on intent_availability",
+      "edge_case": "Player can inquire about intents they cannot actually use",
+      "related_files": []
+    },
+    {
+      "category": "Inventory/Economic",
+      "severity": "HIGH",
+      "location": "inventory_manager.py",
+      "issue": "Inventory must persist across sessions",
+      "recommendation": "Save inventory state with actor data and restore on load",
+      "edge_case": "Items disappear when resuming session",
+      "related_files": []
+    },
+    {
+      "category": "Inventory/Economic",
+      "severity": "MEDIUM",
+      "location": "enhanced_monetary_system.py",
+      "issue": "Currency amounts must be period-appropriate (1960s economics)",
+      "recommendation": "Use RAG to validate prices and wages against 1962-1975 era",
+      "edge_case": "$50 listed as monthly rent when it should be $150-300 for the era",
+      "related_files": []
+    },
+    {
+      "category": "Inventory/Economic",
+      "severity": "MEDIUM",
+      "location": "enhanced_monetary_system.py",
+      "issue": "Economic transactions must be narrated diegetically",
+      "recommendation": "Describe purchases/sales as narrative events, not UI updates",
+      "edge_case": "'You spent $5' appears as system message instead of narrative",
+      "related_files": []
+    },
+    {
+      "category": "Time/Progression",
+      "severity": "HIGH",
+      "location": "master_time_coordinator.py",
+      "issue": "Simulation time must persist across sessions",
+      "recommendation": "Save current time with session and restore on load",
+      "edge_case": "Time resets to start when resuming, breaking schedules",
+      "related_files": []
+    },
+    {
+      "category": "Time/Progression",
+      "severity": "MEDIUM",
+      "location": "simulation_time_tracker.py",
+      "issue": "NPC schedules must respect simulation time",
+      "recommendation": "Update NPC locations/activities based on current time",
+      "edge_case": "NPCs appear at wrong locations because time didn't advance",
+      "related_files": []
+    },
+    {
+      "category": "Time/Progression",
+      "severity": "LOW",
+      "location": "time_lighting_updater.py",
+      "issue": "Scene lighting must update with time of day",
+      "recommendation": "Adjust narrative descriptions based on time (dawn, noon, dusk, night)",
+      "edge_case": "Scene described as 'sunlit' at 2 AM",
+      "related_files": []
+    },
+    {
+      "category": "Spatial/Location",
+      "severity": "HIGH",
+      "location": "sensing_bubble_system.py",
+      "issue": "Sensing bubble must filter perceivable actors/objects by distance",
+      "recommendation": "Only actors within perception range should be visible/narratable",
+      "edge_case": "Actors 500m away appear in scene description as clearly visible",
+      "related_files": []
+    },
+    {
+      "category": "Spatial/Location",
+      "severity": "MEDIUM",
+      "location": "spatial_movement_detector.py",
+      "issue": "Spatial movements must be detected and narrated",
+      "recommendation": "Track actor position changes and generate appropriate narratives",
+      "edge_case": "Actors teleport without narration when moving between locations",
+      "related_files": []
+    },
+    {
+      "category": "Spatial/Location",
+      "severity": "MEDIUM",
+      "location": "spatial_layout_graph.py",
+      "issue": "Scene layout must be internally consistent",
+      "recommendation": "Validate spatial relationships (exits, distances, adjacencies)",
+      "edge_case": "Room has exit to kitchen but kitchen doesn't have exit back",
+      "related_files": []
+    },
+    {
+      "category": "Spatial/Location",
+      "severity": "LOW",
+      "location": "journey_chunking_system.py",
+      "issue": "Long journeys must be chunked into narrative segments",
+      "recommendation": "Break travel into manageable narrative chunks with key moments",
+      "edge_case": "3-hour journey described in one paragraph without intermediate details",
+      "related_files": []
+    },
+    {
+      "category": "NUA Management",
+      "severity": "HIGH",
+      "location": "nua_life_tracker.py",
+      "issue": "NUA life state must persist (health, status, location)",
+      "recommendation": "Save all NUA state with session and restore consistently",
+      "edge_case": "Injured NPC fully healed on session resume",
+      "related_files": []
+    },
+    {
+      "category": "NUA Management",
+      "severity": "MEDIUM",
+      "location": "nua_introduction_system.py",
+      "issue": "NUAs must be properly introduced before being referenced",
+      "recommendation": "Track which actors have been formally introduced to UA",
+      "edge_case": "Narrator refers to 'Marcus' before player has been introduced to him",
+      "related_files": []
+    },
+    {
+      "category": "NUA Management",
+      "severity": "MEDIUM",
+      "location": "multi_actor_manager.py",
+      "issue": "Grouped NUAs must act coherently",
+      "recommendation": "Coordinate actions for NUAs in same faction/group",
+      "edge_case": "Allied NPCs attack each other or ignore group tactics",
+      "related_files": []
+    },
+    {
+      "category": "Diegetic/Personality",
+      "severity": "MEDIUM",
+      "location": "diegetic_transition_system.py",
+      "issue": "Scene/mode transitions must be diegetic (in-world)",
+      "recommendation": "Describe transitions as narrative events, not system states",
+      "edge_case": "'Loading new scene' appears instead of narrative transition",
+      "related_files": []
+    },
+    {
+      "category": "Diegetic/Personality",
+      "severity": "MEDIUM",
+      "location": "personality_mood_system.py",
+      "issue": "Personality traits must affect behavior and narration",
+      "recommendation": "Mood and personality influence available actions and descriptions",
+      "edge_case": "Angry NPC acts cheerful; Phlegmatic character has volatile reactions",
+      "related_files": []
+    },
+    {
+      "category": "Save/Pronoun",
+      "severity": "HIGH",
+      "location": "save_coordinator.py",
+      "issue": "Save/load must preserve all system states consistently",
+      "recommendation": "Ensure all systems (time, context, NUA state, inventory) save together",
+      "edge_case": "Partial save causes state mismatch - context shows scene A but NUA positions from scene B",
+      "related_files": []
+    },
+    {
+      "category": "Save/Pronoun",
+      "severity": "MEDIUM",
+      "location": "pronoun_resolution.py",
+      "issue": "Pronouns must resolve correctly to intended referents",
+      "recommendation": "Use context and recent mentions to disambiguate 'he/she/they'",
+      "edge_case": "'I attack him' targets wrong person when multiple males present",
+      "related_files": []
+    },
+    {
+      "category": "Save/Pronoun",
+      "severity": "LOW",
+      "location": "pronoun_resolution.py",
+      "issue": "Third-person narration must not leak into first-person internal voice",
+      "recommendation": "Filter and convert pronouns appropriately for each output type",
+      "edge_case": "Internal voice refers to UA as 'he' instead of 'you'",
+      "related_files": []
+    },
+    {
+      "category": "Survival/Witness",
+      "severity": "MEDIUM",
+      "location": "survival_system.py",
+      "issue": "Survival stats (hunger, thirst, fatigue) must affect gameplay",
+      "recommendation": "Degraded stats should limit available actions and affect narrative",
+      "edge_case": "Starving character runs marathons without consequence",
+      "related_files": []
+    },
+    {
+      "category": "Survival/Witness",
+      "severity": "MEDIUM",
+      "location": "witness_reaction_system.py",
+      "issue": "Witnesses must react realistically to events",
+      "recommendation": "Observers react based on personality, sympathy, and situation",
+      "edge_case": "Crowd watches violence without reaction; friends ignore player distress",
+      "related_files": []
+    },
+    {
+      "category": "Survival/Witness",
+      "severity": "LOW",
+      "location": "stranger_description_system.py",
+      "issue": "Strangers should have memorable distinguishing features",
+      "recommendation": "Generate consistent physical/personality descriptors for unknown NPCs",
+      "edge_case": "Every stranger described as 'average-looking man in plain clothes'",
+      "related_files": []
+    },
+    {
+      "category": "Tone/Severity Validation",
+      "severity": "MEDIUM",
+      "location": "tone_consistency_validator.py",
+      "issue": "Narrative tone must be consistent within scenes",
+      "recommendation": "Validate tone matches scene type (tense combat vs peaceful conversation)",
+      "edge_case": "Casual banter during life-or-death combat, grim descriptions during tea party",
+      "related_files": []
+    },
+    {
+      "category": "Tone/Severity Validation",
+      "severity": "MEDIUM",
+      "location": "severity_validation.py",
+      "issue": "Action severity must match outcome severity",
+      "recommendation": "Validate that minor actions don't cause catastrophic results (and vice versa)",
+      "edge_case": "'Push gently' causes broken bones; 'full punch' causes no injury",
+      "related_files": []
+    },
+    {
+      "category": "LLM Agents",
+      "severity": "MEDIUM",
+      "location": "llm_agents/diegetic_momentum_tracker.py",
+      "issue": "Diegetic momentum must track narrative pacing across scenes",
+      "recommendation": "Ensure momentum carries appropriately between scene transitions",
+      "edge_case": "Scene transition completely resets narrative momentum",
+      "related_files": []
+    },
+    {
+      "category": "LLM Agents",
+      "severity": "HIGH",
+      "location": "llm_agents/utas_narrative_formula.py",
+      "issue": "UTAS formula must generate consistent narrative structure",
+      "recommendation": "Validate Step 1-6 execution with proper transitions",
+      "edge_case": "Formula steps skipped or executed out of order",
+      "related_files": []
+    },
+    {
+      "category": "LLM Agents",
+      "severity": "HIGH",
+      "location": "llm_agents/scene_manager.py",
+      "issue": "Scene lifecycle must be properly managed",
+      "recommendation": "Track scene initialization, progression, and cleanup consistently",
+      "edge_case": "Scene resources not cleaned up, causing memory leaks",
+      "related_files": []
+    },
+    {
+      "category": "Architect Agent",
+      "severity": "HIGH",
+      "location": "agents/architect_agent.py",
+      "issue": "Architect must maintain scene design authority and consistency",
+      "recommendation": "All scene structural changes must flow through architect",
+      "edge_case": "Scene modifications bypass architect, causing structural inconsistencies",
+      "related_files": []
+    },
+    {
+      "category": "Actor Sheet",
+      "severity": "CRITICAL",
+      "location": "actor_sheet.py",
+      "issue": "All actor attributes must persist across sessions",
+      "recommendation": "Ensure complete serialization of actor state including stats, skills, equipment",
+      "edge_case": "Actor loses skills/equipment on session resume",
+      "related_files": []
+    },
+    {
+      "category": "Actor Sheet",
+      "severity": "MEDIUM",
+      "location": "actor_sheet.py",
+      "issue": "Actor sheet must display correct era/year (1962-1975)",
+      "recommendation": "Integrate year extraction from RAG for character-appropriate age calculation",
+      "edge_case": "Character age calculated using wrong year, shows impossible birth date",
+      "related_files": []
+    },
+    {
+      "category": "Actor Sheet",
+      "severity": "MEDIUM",
+      "location": "actor_sheet.py",
+      "issue": "Actor goals must be fully displayed and integrated",
+      "recommendation": "Display goals with sparks, urgency, and progress in actor sheet",
+      "edge_case": "Goals exist but not visible in actor sheet display",
+      "related_files": []
+    },
+    {
+      "category": "Exchange System",
+      "severity": "CRITICAL",
+      "location": "exchange_system.py",
+      "issue": "Exchange lifecycle (start, process, complete) must be robust",
+      "recommendation": "Handle all exchange states: initiation, turn resolution, completion, cleanup",
+      "edge_case": "Exchange hangs in incomplete state, blocking all further actions",
+      "related_files": []
+    },
+    {
+      "category": "Exchange System",
+      "severity": "HIGH",
+      "location": "exchange_system.py",
+      "issue": "Contested actions must be properly detected and resolved",
+      "recommendation": "Identify opposing actions and apply appropriate resolution mechanics",
+      "edge_case": "Two actors attack each other but neither recognizes the contest",
+      "related_files": []
+    },
+    {
+      "category": "Enhanced Reporter",
+      "severity": "MEDIUM",
+      "location": "enhanced_reporter.py",
+      "issue": "Reporter must capture all simulation events without loss",
+      "recommendation": "Log all actor actions, system decisions, and state changes",
+      "edge_case": "Critical events missing from logs, hindering debugging",
+      "related_files": []
+    },
+    {
+      "category": "Reputation System",
+      "severity": "HIGH",
+      "location": "reputation_system.py",
+      "issue": "Reputation must persist across sessions",
+      "recommendation": "Save faction standings and reputation values with world state",
+      "edge_case": "NPCs forget player reputation after session resume",
+      "related_files": []
+    },
+    {
+      "category": "Reputation System",
+      "severity": "MEDIUM",
+      "location": "reputation_system.py",
+      "issue": "Reputation must affect NPC behavior and availability",
+      "recommendation": "High reputation unlocks favors; low reputation causes hostility",
+      "edge_case": "Infamous player treated same as unknown stranger",
+      "related_files": []
+    },
+    {
+      "category": "Progression",
+      "severity": "HIGH",
+      "location": "progression_tracker.py",
+      "issue": "Skill progression must track experience and level-ups",
+      "recommendation": "Persist skill XP and handle level advancement with appropriate benefits",
+      "edge_case": "Skills gain XP but never level up; or levels reset on resume",
+      "related_files": []
+    },
+    {
+      "category": "Progression",
+      "severity": "MEDIUM",
+      "location": "skill_revelation_system.py",
+      "issue": "Skills must be revealed progressively, not all at once",
+      "recommendation": "Show relevant skills based on context and hide undiscovered ones",
+      "edge_case": "All 50+ skills visible immediately, overwhelming player",
+      "related_files": []
+    },
+    {
+      "category": "Background Simulation",
+      "severity": "MEDIUM",
+      "location": "agents/background_simulation_system.py",
+      "issue": "NPCs must have simulated lives when off-screen",
+      "recommendation": "Update NPC positions, activities, and states based on time passed",
+      "edge_case": "NPCs frozen in place when player leaves, resume exactly as left hours later",
+      "related_files": []
+    },
+    {
+      "category": "Internal Voice Agents",
+      "severity": "MEDIUM",
+      "location": "agents/internal_voice_creator_agent.py",
+      "issue": "Internal voice must use creator agent for character-consistent thoughts",
+      "recommendation": "Ensure character personality influences internal voice generation",
+      "edge_case": "Gruff warrior has flowery poetic internal monologue",
+      "related_files": []
+    },
+    {
+      "category": "Vessel Selection",
+      "severity": "MEDIUM",
+      "location": "vessel_selection_system.py",
+      "issue": "Vessel terminology must be consistent (Hand/Foot/Mouth/Mind)",
+      "recommendation": "Use standard vessel categories consistently across all actions",
+      "edge_case": "Mixing 'Hand' and 'Fist' as separate vessels inconsistently",
+      "related_files": []
+    },
+    {
+      "category": "Diegetic Tracking",
+      "severity": "HIGH",
+      "location": "diegetic_clue_tracker.py",
+      "issue": "Diegetic clues must persist and remain discoverable",
+      "recommendation": "Track which clues have been revealed and their current state",
+      "edge_case": "Clues revealed once then forgotten, never available again",
+      "related_files": []
+    },
+    {
+      "category": "Diegetic Tracking",
+      "severity": "MEDIUM",
+      "location": "concrete_detail_tracker.py",
+      "issue": "Concrete details must be tracked for continuity",
+      "recommendation": "Remember specific objects, positions, and states mentioned in narrative",
+      "edge_case": "Object mentioned in scene 1 disappears without explanation in scene 2",
+      "related_files": []
+    },
+    {
+      "category": "Failure Systems",
+      "severity": "HIGH",
+      "location": "failure_narrative_generator.py",
+      "issue": "Failures must generate appropriate narrative consequences",
+      "recommendation": "Describe failures with context-appropriate consequences, not generic messages",
+      "edge_case": "All failures described as 'you failed' regardless of context or severity",
+      "related_files": []
+    },
+    {
+      "category": "Actor Placement/Filter",
+      "severity": "HIGH",
+      "location": "actor_placement_system.py",
+      "issue": "Actor placement must respect scene boundaries and logic",
+      "recommendation": "Validate actors placed in appropriate locations with valid positions",
+      "edge_case": "NPCs placed inside walls, under ground, or in impossible locations",
+      "related_files": []
+    },
+    {
+      "category": "Multimedia",
+      "severity": "LOW",
+      "location": "fal_image_system.py",
+      "issue": "Image generation must match narrative context",
+      "recommendation": "Generate images consistent with scene description and era",
+      "edge_case": "Generated image shows modern elements in 1960s scene",
+      "related_files": []
+    },
+    {
+      "category": "Additional Agents",
+      "severity": "MEDIUM",
+      "location": "agents/storyteller_agent.py",
+      "issue": "Storyteller must maintain narrative coherence across long arcs",
+      "recommendation": "Track plot threads and ensure satisfying resolution",
+      "edge_case": "Plot threads introduced but never resolved",
+      "related_files": []
+    },
+    {
+      "category": "Partial Action",
+      "severity": "HIGH",
+      "location": "partial_action_system.py",
+      "issue": "Partially completed actions must resume correctly",
+      "recommendation": "Track progress of long actions and allow resumption after interruption",
+      "edge_case": "Action interrupted, progress lost, must start from beginning",
+      "related_files": []
+    },
+    {
+      "category": "World-Spatial Integration",
+      "severity": "MEDIUM",
+      "location": "world_spatial_integration.py",
+      "issue": "World map and local scenes must be consistent",
+      "recommendation": "Ensure travel between locations updates both world and spatial contexts",
+      "edge_case": "Player travels to city A in world map but scene shows city B",
+      "related_files": []
+    },
+    {
+      "category": "Population",
+      "severity": "MEDIUM",
+      "location": "agents/population_manager.py",
+      "issue": "Scene population must match location type and time",
+      "recommendation": "Busy market has many NPCs at noon, empty at midnight",
+      "edge_case": "Deserted alley has 20 NPCs at 3 AM",
+      "related_files": []
+    },
+    {
+      "category": "Utility/Helpers",
+      "severity": "MEDIUM",
+      "location": "action_type_detector.py",
+      "issue": "Action types must be classified consistently for formula application",
+      "recommendation": "Ensure detector returns consistent types: Attack, Defend, Social, etc.",
+      "edge_case": "Ambiguous action misclassified, leading to wrong formula application",
+      "related_files": []
+    },
+    {
+      "category": "Utility/Helpers",
+      "severity": "MEDIUM",
+      "location": "context_injection_helper.py",
+      "issue": "Context injection must format data properly for LLM consumption",
+      "recommendation": "Validate injected context format and relevance filtering",
+      "edge_case": "Too much context injected, exceeding token limits or causing confusion",
+      "related_files": []
+    },
+    {
+      "category": "Utility/Helpers",
+      "severity": "MEDIUM",
+      "location": "dynamic_actor_justification.py",
+      "issue": "Actor spawns must be justified diegetically",
+      "recommendation": "New actors need narrative explanation for their presence",
+      "edge_case": "NPC appears with no explanation of why they're there",
+      "related_files": []
+    },
+    {
+      "category": "Utility/Helpers",
+      "severity": "MEDIUM",
+      "location": "do_nothing_action.py",
+      "issue": "'Do nothing' must advance time and allow reactions",
+      "recommendation": "Ensure pass action progresses simulation state",
+      "edge_case": "Skipping turn doesn't advance time or allow NPC reactions",
+      "related_files": []
+    },
+    {
+      "category": "Utility/Helpers",
+      "severity": "LOW",
+      "location": "narrative_utils.py",
+      "issue": "Narrative utilities must handle text formatting consistently",
+      "recommendation": "Standardize sentence generation, paragraph breaks, and formatting",
+      "edge_case": "Inconsistent formatting between different narrative generators",
+      "related_files": []
+    },
+    {
+      "category": "Utility/Helpers",
+      "severity": "MEDIUM",
+      "location": "economic_awareness_enhancer.py",
+      "issue": "Economic context must influence NPC behavior",
+      "recommendation": "Poor NPCs act desperate; wealthy act generous/entitled",
+      "edge_case": "Beggar offers player large sum without economic justification",
+      "related_files": []
+    },
+    {
+      "category": "Utility/Helpers",
+      "severity": "HIGH",
+      "location": "unified_formula.py",
+      "issue": "Unified formula must resolve all action types consistently",
+      "recommendation": "Formula should handle contested, uncontested, and cooperative actions",
+      "edge_case": "Same formula produces wildly different results for similar situations",
+      "related_files": []
+    },
+    {
+      "category": "Layout/Visualizer",
+      "severity": "HIGH",
+      "location": "layout_generator.py",
+      "issue": "Scene layouts must be consistent and navigable",
+      "recommendation": "Generate valid spatial layouts with proper exits and boundaries",
+      "edge_case": "Generated layout has exits leading nowhere or impossible geometry",
+      "related_files": []
+    },
+    {
+      "category": "Layout/Visualizer",
+      "severity": "MEDIUM",
+      "location": "llm_layout_generator.py",
+      "issue": "LLM-generated layouts must be parsed and validated",
+      "recommendation": "Extract layout data from LLM response and validate structure",
+      "edge_case": "LLM generates narrative description instead of structured layout data",
+      "related_files": []
+    },
+    {
+      "category": "Layout/Visualizer",
+      "severity": "MEDIUM",
+      "location": "pygame_spatial_map.py",
+      "issue": "Spatial map visualization must reflect actual actor positions",
+      "recommendation": "Sync visual map with simulation state in real-time",
+      "edge_case": "Map shows actors in wrong locations compared to narrative",
+      "related_files": []
+    },
+    {
+      "category": "Layout/Visualizer",
+      "severity": "MEDIUM",
+      "location": "location_distance_tracker.py",
+      "issue": "Distances between locations must be consistent",
+      "recommendation": "Track travel distances and times between connected locations",
+      "edge_case": "City A to B takes 1 hour, but B to A takes 5 hours without reason",
+      "related_files": []
+    },
+    {
+      "category": "Layout/Visualizer",
+      "severity": "LOW",
+      "location": "location_sizer.py",
+      "issue": "Location sizes must be appropriate for their type",
+      "recommendation": "Generate realistic dimensions for rooms, buildings, outdoor areas",
+      "edge_case": "Closet sized as 500 square meters",
+      "related_files": []
+    },
+    {
+      "category": "Layout/Visualizer",
+      "severity": "MEDIUM",
+      "location": "visualizer_prompt_system.py",
+      "issue": "Visualization prompts must generate era-appropriate imagery",
+      "recommendation": "Include 1962-1975 context in image generation prompts",
+      "edge_case": "Visualizer generates modern cars/clothing for 1960s scene",
+      "related_files": []
+    },
+    {
+      "category": "Parser/Wrapper",
+      "severity": "MEDIUM",
+      "location": "npc_parser_wrapper.py",
+      "issue": "NPC parser must handle all response formats consistently",
+      "recommendation": "Normalize various NPC data formats to standard structure",
+      "edge_case": "Different NPC sources produce incompatible data structures",
+      "related_files": []
+    },
+    {
+      "category": "Parser/Wrapper",
+      "severity": "HIGH",
+      "location": "scene_npc_parser.py",
+      "issue": "Scene descriptions must be parsed for NPC mentions accurately",
+      "recommendation": "Extract NPC names, descriptions, and positions from scene text",
+      "edge_case": "NPC mentioned in scene but not extracted for interaction",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "HIGH",
+      "location": "response_normalizer.py",
+      "issue": "All LLM responses must be normalized to consistent format",
+      "recommendation": "Standardize field names, types, and structures across all responses",
+      "edge_case": "Same action produces different response structures on different runs",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "MEDIUM",
+      "location": "spatial_location_analyzer.py",
+      "issue": "Spatial relationships must be analyzed correctly",
+      "recommendation": "Calculate distances, visibility, and accessibility accurately",
+      "edge_case": "Actors marked as visible when behind solid obstacles",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "MEDIUM",
+      "location": "survival_action_analyzer.py",
+      "issue": "Survival actions must be analyzed for resource impact",
+      "recommendation": "Track hunger, thirst, fatigue changes from survival activities",
+      "edge_case": "Long hike doesn't increase hunger or decrease stamina",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "MEDIUM",
+      "location": "sympathy_utils.py",
+      "issue": "Sympathy calculations must be consistent across systems",
+      "recommendation": "Use shared utility functions for all sympathy modifications",
+      "edge_case": "Same interaction changes sympathy differently in different systems",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "MEDIUM",
+      "location": "worldbuilding_helpers.py",
+      "issue": "Worldbuilding helpers must respect era constraints",
+      "recommendation": "Validate all generated content against 1962-1975 setting",
+      "edge_case": "Modern technology referenced in worldbuilding data",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "MEDIUM",
+      "location": "ally_coordination_system.py",
+      "issue": "Allied NPCs must coordinate effectively",
+      "recommendation": "Share tactical information and plan joint actions",
+      "edge_case": "Allies act independently without considering each other",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "MEDIUM",
+      "location": "enhanced_sympathy_system.py",
+      "issue": "Enhanced sympathy must track complex relationships",
+      "recommendation": "Handle sympathy modifiers, history, and context-dependent shifts",
+      "edge_case": "Sympathy doesn't account for past betrayals or favors",
+      "related_files": []
+    },
+    {
+      "category": "Analysis/Helper",
+      "severity": "LOW",
+      "location": "enhanced_temporary_recovery_system.py",
+      "issue": "Temporary status recovery must handle edge cases",
+      "recommendation": "Properly expire temporary statuses and handle extensions",
+      "edge_case": "Temporary buffs become permanent due to recovery bug",
+      "related_files": []
+    },
+    {
+      "category": "Trivial",
+      "severity": "LOW",
+      "location": "config.py",
+      "issue": "Configuration must be loaded consistently across all systems",
+      "recommendation": "Centralize config loading to avoid inconsistent settings",
+      "edge_case": "Different systems use different default values for same setting",
+      "related_files": []
+    },
+    {
+      "category": "Integration Points",
+      "severity": "HIGH",
+      "location": "agents/conductor_agent.py",
+      "issue": "Conductor must propagate scene_description to all child agents",
+      "recommendation": "Use @scene_description.setter to update interpreter, decider, and narrator",
+      "edge_case": "Stale scene descriptions cause continuity violations",
+      "related_files": [
+        "agents/conductor_agent.py:590-616"
+      ]
+    },
+    {
+      "category": "Integration Points",
+      "severity": "HIGH",
+      "location": "agents/",
+      "issue": "All LLM-using agents must have access to RAG system",
+      "recommendation": "Pass rag_system to all agents that generate content",
+      "edge_case": "Agents without RAG produce anachronistic content (modern terms in 1960s setting)",
+      "related_files": []
+    },
+    {
+      "category": "Integration Points",
+      "severity": "MEDIUM",
+      "location": "world_persistence_system.py",
+      "issue": "World state must be loaded before actor interactions",
+      "recommendation": "Initialize world_state early in startup sequence",
+      "edge_case": "Missing world state causes reputation/schedule/aftermath data loss",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "MAIN/redesigned_main.py:8318-8320",
+      "issue": "Session Resume with Stale Context",
+      "recommendation": "Ensure sync_context_with_tracker() is called on resume",
+      "edge_case": "When resuming a session, context_manager may have stale data",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "encounter_checker.py",
+      "issue": "Empty Actor Queue",
+      "recommendation": "Validate queue state before accessing turn_queue_position",
+      "edge_case": "Turn queue may be empty or have position beyond length",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "MAIN/redesigned_main.py:19750-19860",
+      "issue": "Phone Call Actor Reference",
+      "recommendation": "Handle missing spatial data gracefully for remote encounters",
+      "edge_case": "Remote actors may not be in spatial context",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "key_memories_system.py",
+      "issue": "Memory Overflow",
+      "recommendation": "Implement memory pruning/aging strategy",
+      "edge_case": "Unbounded memory growth in key_memories",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "rag_lock_utils.py",
+      "issue": "RAG Lock Timeout",
+      "recommendation": "Add timeout handling to get_multi_category_context_for_llm",
+      "edge_case": "RAG queries may hang indefinitely",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "json_utils.py",
+      "issue": "JSON Parsing Failures",
+      "recommendation": "Use extract_and_parse_json with robust fallback parsing",
+      "edge_case": "LLM responses may contain invalid JSON",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "agents/creator_agent.py:304-313",
+      "issue": "Mode B Validation Crash",
+      "recommendation": "Disable validation by default, enable only for strict mode",
+      "edge_case": "Character creation fails if skills/items not in RAG",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "dynamic_actor_system.py:72-80",
+      "issue": "NUA Detection False Positive",
+      "recommendation": "Use phrase-level matching instead of word-level",
+      "edge_case": "Partial word matching blocks legitimate new actors",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "llm_agents/sympathy_initialization.py",
+      "issue": "Sympathy Context Loss",
+      "recommendation": "Pass narrative context to sympathy initialization",
+      "edge_case": "New NPCs default to neutral despite narrative context",
+      "related_files": []
+    },
+    {
+      "category": "Edge Cases",
+      "severity": "MEDIUM",
+      "location": "agents/interpreter_agent.py:90-109",
+      "issue": "Spatial Session Mismatch",
+      "recommendation": "Always use tracker.session_id for spatial operations",
+      "edge_case": "Spatial manager uses wrong session ID after resume",
+      "related_files": []
+    }
+  ]
+}
