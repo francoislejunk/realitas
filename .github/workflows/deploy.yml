@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: realitas-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REALITAS_DEPLOY_HOST: 178.104.92.122
+      REALITAS_DEPLOY_USER: root
+      REALITAS_DEPLOY_SSH_KEY: ${{ github.workspace }}/.github-realitas-deploy-key
+      REALITAS_REMOTE_DIR: /home/deploy/realitas
+      REALITAS_SERVICE_NAME: realitas.service
+      REALITAS_REPO_URL: https://github.com/francoislejunk/realitas.git
+      REALITAS_BRANCH: main
+      REALITAS_HEALTH_URL: http://127.0.0.1:3000/health
+      REALITAS_START_CMD: /usr/bin/node server.js
+      REALITAS_DEPLOY_CONFIRM: deploy-realitas
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install smoke dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+
+      - name: Run smoke test
+        run: ./scripts/smoke-test.sh
+
+      - name: Install SSH key
+        env:
+          REALITAS_DEPLOY_SSH_KEY_PRIVATE: ${{ secrets.REALITAS_DEPLOY_SSH_KEY }}
+        run: |
+          test -n "$REALITAS_DEPLOY_SSH_KEY_PRIVATE"
+          umask 077
+          printf '%s\n' "$REALITAS_DEPLOY_SSH_KEY_PRIVATE" > "$REALITAS_DEPLOY_SSH_KEY"
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$REALITAS_DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy to realitas-dev
+        run: ./scripts/deploy-realitas.sh --apply
+
+      - name: Probe live health through VPS public HTTP
+        run: ./scripts/health-probe.sh http://178.104.92.122/health

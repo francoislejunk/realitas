@@ -1,0 +1,14 @@
+{
+  "name": "realitas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Realitas - AI Reality Simulator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "health": "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1);return r.text()}).then(console.log)\""
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
