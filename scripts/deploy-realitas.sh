@@ -24,6 +24,8 @@ Environment:
   REALITAS_BRANCH            default: current branch
   REALITAS_HEALTH_URL        default: http://127.0.0.1:3000/health
   REALITAS_START_CMD         default: /usr/bin/node server.js
+  REALITAS_WORLD_STATE_FILE  default: data/world-state.json under the app dir
+  REALITAS_CONTEXT_DB        default: simulation_data/context/context.db under the app dir
   REALITAS_DEPLOY_CONFIRM    must equal deploy-realitas for --apply
   REALITAS_ENABLE_NGINX      set to 1 to replace nginx routing after backup
 
@@ -48,6 +50,8 @@ repo_url="${REALITAS_REPO_URL:-$repo_url_default}"
 branch="${REALITAS_BRANCH:-$branch_default}"
 health_url="${REALITAS_HEALTH_URL:-http://127.0.0.1:3000/health}"
 start_cmd="${REALITAS_START_CMD:-/usr/bin/node server.js}"
+world_state_file="${REALITAS_WORLD_STATE_FILE:-$remote_dir/data/world-state.json}"
+context_db="${REALITAS_CONTEXT_DB:-$remote_dir/simulation_data/context/context.db}"
 enable_nginx="${REALITAS_ENABLE_NGINX:-0}"
 
 if [[ -z "$repo_url" ]]; then
@@ -68,6 +72,8 @@ echo "service=$service"
 echo "repo=$repo_url branch=$branch"
 echo "health_url=$health_url"
 echo "enable_nginx=$enable_nginx"
+echo "world_state_file=$world_state_file"
+echo "context_db=$context_db"
 
 "${ssh_base[@]}" "REALITAS_REMOTE_DIR='$remote_dir' REALITAS_SERVICE_NAME='$service' REALITAS_HEALTH_URL='$health_url' bash -s" <<'REMOTE_PREFLIGHT'
 set -euo pipefail
@@ -99,7 +105,7 @@ commit="$(git rev-parse HEAD)"
 echo "applying commit $commit to ${user}@${host}:${remote_dir}"
 
 "${ssh_base[@]}" \
-  "REALITAS_REMOTE_DIR='$remote_dir' REALITAS_SERVICE_NAME='$service' REALITAS_REPO_URL='$repo_url' REALITAS_BRANCH='$branch' REALITAS_COMMIT='$commit' REALITAS_START_CMD='$start_cmd' REALITAS_ENABLE_NGINX='$enable_nginx' bash -s" <<'REMOTE_APPLY'
+  "REALITAS_REMOTE_DIR='$remote_dir' REALITAS_SERVICE_NAME='$service' REALITAS_REPO_URL='$repo_url' REALITAS_BRANCH='$branch' REALITAS_COMMIT='$commit' REALITAS_START_CMD='$start_cmd' REALITAS_WORLD_STATE_FILE='$world_state_file' REALITAS_CONTEXT_DB='$context_db' REALITAS_ENABLE_NGINX='$enable_nginx' bash -s" <<'REMOTE_APPLY'
 set -euo pipefail
 umask 022
 backup_dir="${REALITAS_REMOTE_DIR}.backup.$(date -u +%Y%m%dT%H%M%SZ)"
@@ -131,6 +137,16 @@ if [[ -f package.json && -f package-lock.json ]]; then
   npm ci --omit=dev
 elif [[ -f package.json ]]; then
   npm install --omit=dev
+fi
+
+if [[ -f "$REALITAS_CONTEXT_DB" && -f realitas_world_exporter.py ]]; then
+  echo "remote: exporting world state from $REALITAS_CONTEXT_DB to $REALITAS_WORLD_STATE_FILE"
+  python3 realitas_world_exporter.py \
+    --db "$REALITAS_CONTEXT_DB" \
+    --out "$REALITAS_WORLD_STATE_FILE" \
+    --session "${REALITAS_CONTEXT_SESSION:-default}"
+else
+  echo "remote: world-state export skipped; context DB not found at $REALITAS_CONTEXT_DB"
 fi
 
 install -d -m 0755 /etc/realitas

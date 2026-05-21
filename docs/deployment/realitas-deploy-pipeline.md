@@ -8,7 +8,8 @@
 - SSH key: `/Users/frankmcalvarez/.ssh/hetzner_realitas`; Bitwarden has the deploy/infra credential metadata, but no secret values belong in this repo.
 - Existing service: `realitas.service` runs as `deploy` from `/home/deploy/realitas` on port `3000`.
 - Existing public nginx/Gordon routing must not be clobbered casually. Realitas public routing is separately gated.
-- Cloudflared is token-managed on the VPS; local ingress config is not present, so exact public hostname remains a gate.
+- Cloudflare Tunnel routes `https://dev.subrealiti.es` to the app on port `3000`.
+- `/api/world` reads `data/world-state.json`; `realitas_world_exporter.py` regenerates that file from `ContextStore` when a context DB exists.
 
 ## Deployment shape
 
@@ -17,7 +18,7 @@
 3. The current deployable web shell is `server.js` with `/health` and `/healthz`.
 4. `.github/workflows/deploy.yml` is manual-only (`workflow_dispatch`) and requires the `confirm` input to equal `deploy-realitas`; merging this PR does not auto-mutate the VPS.
 5. `scripts/deploy-realitas.sh --preflight` is read-only and verifies SSH, remote tools, service state, and local health.
-6. `scripts/deploy-realitas.sh --apply` requires `REALITAS_DEPLOY_CONFIRM=deploy-realitas`, backs up the existing app directory, resets the VPS checkout to the deploying commit, restarts `realitas.service`, and probes local service health.
+6. `scripts/deploy-realitas.sh --apply` requires `REALITAS_DEPLOY_CONFIRM=deploy-realitas`, backs up the existing app directory, resets the VPS checkout to the deploying commit, refreshes `data/world-state.json` from `REALITAS_CONTEXT_DB` when present, restarts `realitas.service`, and probes local service health.
 7. Nginx replacement requires a separate `REALITAS_ENABLE_NGINX=1` gate. When enabled, the helper backs up `/etc/nginx/sites-available` and `/etc/nginx/sites-enabled` before replacing routing.
 8. GitHub Actions deploy requires repository secret `REALITAS_DEPLOY_SSH_KEY` and should only be run after the GitHub secret, SSH path, runtime target, and public hostname/routing decision are verified.
 
