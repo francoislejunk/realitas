@@ -1,0 +1,238 @@
+{
+  "simulation_session": {
+    "session_id": "string (UUID)",
+    "start_timestamp": "ISO 8601 timestamp",
+    "end_timestamp": "ISO 8601 timestamp (null if ongoing)",
+    "version": "string (schema version)",
+    "initial_actors": [
+      {
+        "actor_id": "string",
+        "actor_type": "UserActor | NonUserActor",
+        "name": "string",
+        "initial_sheet_snapshot": "ActorSheet serialized state"
+      }
+    ],
+    "scenes": [
+      {
+        "scene_id": "string (UUID)",
+        "scene_number": "integer",
+        "timestamp": "ISO 8601 timestamp",
+        "scene_data": {
+          "scene_elements": "object (from CreatorAgent)",
+          "nua_data": "object (NonUserActor data if present)",
+          "scene_description": "string (narrated scene intro)"
+        },
+        "exchanges": [
+          {
+            "exchange_id": "string (UUID)",
+            "exchange_number": "integer (within scene)",
+            "timestamp": "ISO 8601 timestamp",
+            "participants": ["actor_id1", "actor_id2"],
+            "rounds": [
+              {
+                "round_id": "string (UUID)",
+                "round_number": "integer",
+                "timestamp": "ISO 8601 timestamp",
+                "initiative_data": {
+                  "actor_initiatives": {
+                    "actor_name": {
+                      "swiftness": "integer",
+                      "serendipity": "integer",
+                      "serendipity_roll_detail": "string (e.g., '2D6-7 -> 8-7=+1')",
+                      "total": "integer"
+                    }
+                  },
+                  "turn_order": ["actor_name1", "actor_name2"]
+                },
+                "turns": [
+                  {
+                    "turn_id": "string (UUID)",
+                    "turn_number": "integer",
+                    "timestamp": "ISO 8601 timestamp",
+                    "proactor": "actor_id",
+                    "reactor": "actor_id",
+                    "pre_turn_snapshots": {
+                      "proactor_sheet": "ActorSheet serialized state",
+                      "reactor_sheet": "ActorSheet serialized state"
+                    },
+                    "step1_proactor_interpretation": {
+                      "agent_type": "InterpreterAgent",
+                      "input_data": {
+                        "user_action": "string (if UserActor)",
+                        "scene_context": "string",
+                        "actor_sheet_data": "object"
+                      },
+                      "llm_interaction": {
+                        "model_used": "string",
+                        "prompt_sent": "string (full prompt)",
+                        "raw_response": "string (raw LLM response)",
+                        "processing_time": "float (seconds)"
+                      },
+                      "normalized_output": {
+                        "action_description": "string",
+                        "utas_factors": {
+                          "s_trait_to_use": "string",
+                          "skill": "object | string",
+                          "endowment": "object | string",
+                          "supplement": "object | string",
+                          "status_to_shift": "string",
+                          "stress_level": "integer"
+                        },
+                        "self_effects": [
+                          {
+                            "trigger_condition": "string",
+                            "status_to_shift": "string",
+                            "shift_polarity": "integer",
+                            "base_magnitude": "integer",
+                            "shift_type": "string",
+                            "description": "string"
+                          }
+                        ]
+                      },
+                      "enriched_factors": {
+                        "s_trait_actual_value": "integer",
+                        "skill_actual_value": "integer",
+                        "super_actual_value": "integer",
+                        "supplement_actual_value": "integer"
+                      }
+                    },
+                    "step2_proactor_success": {
+                      "calculation_breakdown": {
+                        "base_success": "integer",
+                        "s_trait_contribution": "integer",
+                        "skill_contribution": "integer",
+                        "super_contribution": "integer",
+                        "supplement_contribution": "integer",
+                        "status_modifier": "integer",
+                        "final_success": "integer"
+                      },
+                      "attempt_narrative": "string"
+                    },
+                    "step3_reactor_interpretation": {
+                      "agent_type": "DeciderAgent",
+                      "input_data": {
+                        "proactor_action": "object",
+                        "scene_context": "string",
+                        "reactor_sheet_data": "object"
+                      },
+                      "llm_interaction": {
+                        "model_used": "string",
+                        "prompt_sent": "string",
+                        "raw_response": "string",
+                        "processing_time": "float"
+                      },
+                      "normalized_output": {
+                        "action_description": "string",
+                        "utas_factors": "object (same structure as proactor)",
+                        "self_effects": "array (same structure as proactor)"
+                      },
+                      "enriched_factors": "object (same structure as proactor)"
+                    },
+                    "step4_reactor_success": {
+                      "calculation_breakdown": "object (same structure as proactor)",
+                      "attempt_narrative": "string"
+                    },
+                    "step5_exchange_resolution": {
+                      "exchange_calculation": {
+                        "proactor_final_success": "integer",
+                        "reactor_final_success": "integer",
+                        "winner": "string (proactor | reactor | draw)",
+                        "success_difference": "integer"
+                      },
+                      "status_shifts": {
+                        "primary_shift": {
+                          "affected_actor": "actor_id",
+                          "status_type": "string",
+                          "original_value": "integer",
+                          "shift_amount": "integer",
+                          "new_value": "integer",
+                          "shift_type": "string",
+                          "shift_polarity": "string"
+                        }
+                      },
+                      "self_effects_applied": [
+                        {
+                          "affected_actor": "actor_id",
+                          "effect_data": {
+                            "trigger_condition": "string",
+                            "status_shifted": "string",
+                            "original_status": "integer",
+                            "updated_status": "integer",
+                            "shift_magnitude": "integer",
+                            "shift_type": "string",
+                            "shift_polarity": "string",
+                            "description": "string",
+                            "prefix": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "step6_narrative_outcome": {
+                      "agent_type": "NarratorAgent",
+                      "input_data": {
+                        "outcome_data": "object",
+                        "scene_context": "string"
+                      },
+                      "llm_interaction": {
+                        "model_used": "string",
+                        "prompt_sent": "string",
+                        "raw_response": "string",
+                        "processing_time": "float"
+                      },
+                      "final_narrative": "string"
+                    },
+                    "post_turn_snapshots": {
+                      "proactor_sheet": "ActorSheet serialized state",
+                      "reactor_sheet": "ActorSheet serialized state"
+                    },
+                    "reporter_output": {
+                      "formatted_output": "string (complete turn report)",
+                      "display_timestamp": "ISO 8601 timestamp"
+                    }
+                  }
+                ]
+              }
+            ],
+            "exchange_outcome": {
+              "winner": "actor_id | null",
+              "final_state": "string (resolved | ongoing | interrupted)",
+              "scene_transition": "boolean"
+            }
+          }
+        ],
+        "scene_conclusion": {
+          "conclusion_type": "string (victory | defeat | transition | interrupted)",
+          "final_narrative": "string",
+          "next_scene_trigger": "string | null"
+        }
+      }
+    ],
+    "session_statistics": {
+      "total_scenes": "integer",
+      "total_exchanges": "integer",
+      "total_rounds": "integer",
+      "total_turns": "integer",
+      "total_llm_calls": "integer",
+      "total_processing_time": "float (seconds)",
+      "actor_statistics": {
+        "actor_id": {
+          "turns_as_proactor": "integer",
+          "turns_as_reactor": "integer",
+          "successful_actions": "integer",
+          "failed_actions": "integer",
+          "status_changes": "integer",
+          "self_effects_triggered": "integer"
+        }
+      }
+    },
+    "error_log": [
+      {
+        "timestamp": "ISO 8601 timestamp",
+        "error_type": "string",
+        "error_message": "string",
+        "context": "object",
+        "recovery_action": "string"
+      }
+    ]
+  }
+}

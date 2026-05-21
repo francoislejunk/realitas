@@ -1,0 +1,65 @@
+# Quick Test Inputs - Copy/Paste These Into Simulation
+
+## PART 1: INQUIRY SYSTEM (5 inputs)
+What's the best way to get downtown?
+Can I take the subway?
+memories
+What's in the sewers?
+Should I take the subway downtown?
+
+## PART 2: GIVEN ACTIONS (2 inputs)
+I walk to the door
+I sit down
+
+## PART 3: FALLIBLE ACTIONS (2 inputs)
+I climb over the fence
+I search the room for clues
+
+## PART 4: MEMORY CONSISTENCY (1 input)
+I go to the subway
+
+## PART 5: CONTESTED ACTIONS (3 inputs)
+I try to convince the guard to let me pass
+I punch the guard
+ua
+
+## PART 6: CHECK SHEETS (2 inputs)
+ua
+people
+
+## PART 7: SYMPATHY TESTS (3 inputs - requires NPC relationship)
+I help [NPC name] up
+I punch [NPC name]
+I apologize to [NPC name]
+
+## PART 8: STATUS RECOVERY (1 input - after taking damage)
+[Wait for next turn to see +1 recovery]
+
+## PART 9: GOAL PROGRESS (2 inputs)
+[Action related to your goal]
+I buy a sandwich
+
+## PART 10: NARRATIVE MODES (3 inputs)
+look
+I talk to [NPC name]
+I attack [NPC name]
+
+## PART 11: TIME PROGRESSION (3 inputs)
+I look around
+I search thoroughly
+I go to sleep
+
+## PART 12: SPATIAL SYSTEM (2 inputs)
+map
+I go to [zone name]
+
+## PART 13: COMMANDS (4 inputs)
+ua
+people
+look
+memories
+
+---
+
+TOTAL: ~30 inputs to test all major systems
+TIME: ~30-45 minutes for complete test

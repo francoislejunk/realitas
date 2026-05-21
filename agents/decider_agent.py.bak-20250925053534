@@ -1,0 +1,1001 @@
+import json
+import hashlib
+from typing import TYPE_CHECKING, Dict, Any, Optional
+from openrouter_config import create_role_client, OpenRouterConfig
+from logbook.utas_logger import UTASLogger
+from color_utils import Color
+from json_utils import extract_and_parse_json
+from numeric_utils import extract_numeric_value
+from response_normalizer import ResponseNormalizer
+from schemas.utas_action import validate_action_data
+
+if TYPE_CHECKING:
+    from actors import Actor
+
+class DeciderAgent:
+    """
+    The Decider Agent, responsible for determining Non-User Actor (NUA)
+    and Inanimate Non-User Actor (INUA) actions and reactions in the simulation.
+    """
+
+    def __init__(self, logger: 'UTASLogger', scene_description: str, tracker_agent=None):
+        self.logger = logger
+        self.scene_description = scene_description
+        self.tracker_agent = tracker_agent
+        
+        if not tracker_agent:
+            logger.log_system("WARNING: DeciderAgent initialized without tracker_agent. Action variety may be compromised.")
+        # Set a 5-minute timeout for the client
+        self.client = create_role_client("decision_making")
+        self.model = OpenRouterConfig.get_model_for_role("decision_making")
+        
+        self.response_cache = {}
+        self.cache_hits = 0
+        self.cache_misses = 0
+        print("Decider Agent initialized.")
+
+    def _refresh_scene_from_tracker(self) -> None:
+        """Update self.scene_description from TrackerAgent if available."""
+        try:
+            if getattr(self, 'tracker_agent', None):
+                latest = self.tracker_agent.get_current_scene() or {}
+                latest_desc = latest.get('scene_description')
+                if latest_desc:
+                    self.scene_description = latest_desc
+        except Exception:
+            # Non-fatal: keep current scene_description
+            pass
+
+    def _get_historical_context(self, lookback_turns: int = 3) -> str:
+        """Get recent turn history for NUA decision context."""
+        if not self.tracker_agent:
+            return "\n**No historical context available**\n"
+        
+        try:
+            context = self.tracker_agent.get_context_for_llm(lookback_turns)
+            if context.strip():
+                return f"\n**Recent Turn History:**\n{context}\n"
+            else:
+                return "\n**No previous turns recorded**\n"
+        except Exception as e:
+            self.logger.log_system(f"Error getting historical context: {e}")
+            return "\n**Historical context unavailable**\n"
+    
+    def _get_recent_nua_actions(self, actor_name: str, lookback_turns: int = None) -> str:
+        """Get ALL historical actions by this specific NUA to prevent repetition."""
+        if not self.tracker_agent:
+            return "No action history available - be creative and varied!"
+        
+        try:
+            actor_id = f"actor_{actor_name.lower().replace(' ', '_')}"
+            all_actions = self.tracker_agent.get_actor_history(actor_id)
+            
+            # Debug logging
+            self.logger.log_system(f"DEBUG: Looking for actor_id: {actor_id}")
+            self.logger.log_system(f"DEBUG: Found {len(all_actions)} total actions for {actor_name}")
+            
+            if not all_actions:
+                return "No previous actions recorded - be creative!"
+            
+            historical_actions = []
+            proactor_turns = 0
+            
+            for i, turn_data in enumerate(all_actions):
+                role = turn_data.get("role", "unknown")
+                turn_info = turn_data.get("turn_data", {})
+                
+                self.logger.log_system(f"DEBUG: Turn {i+1} - Role: {role}")
+                self.logger.log_system(f"DEBUG: Available keys in turn_info: {list(turn_info.keys())}")
+                
+                # Check multiple possible data structures
+                action_desc = None
+                if role == "proactor":
+                    proactor_turns += 1
+                    
+                    # Try different possible data locations
+                    if turn_info.get("step1_proactor_interpretation"):
+                        step1_data = turn_info["step1_proactor_interpretation"]
+                        if "normalized_output" in step1_data:
+                            action_desc = step1_data["normalized_output"].get("action_description", "Unknown action")
+                        elif "input_data" in step1_data:
+                            action_desc = step1_data["input_data"].get("narrative_description", "Unknown action")
+                    
+                    # Fallback: look for any action description in the turn data
+                    if not action_desc:
+                        for key, value in turn_info.items():
+                            if isinstance(value, dict):
+                                if "action_description" in value:
+                                    action_desc = value["action_description"]
+                                    break
+                                elif "narrative_description" in value:
+                                    action_desc = value["narrative_description"]
+                                    break
+                    
+                    if action_desc:
+                        historical_actions.append(f"- {action_desc}")
+                        self.logger.log_system(f"DEBUG: Found proactor action: {action_desc}")
+                    else:
+                        self.logger.log_system(f"DEBUG: No action description found in turn {i+1}")
+            
+            self.logger.log_system(f"DEBUG: {actor_name} was proactor in {proactor_turns} turns, found {len(historical_actions)} action descriptions")
+            
+            if historical_actions:
+                return f"ALL historical actions by {actor_name}:\n" + "\n".join(historical_actions) + "\n\n**AVOID repeating ANY of these patterns! Create something completely new and different.**"
+            else:
+                return f"No historical actions found for {actor_name} - be creative and authentic!"
+                
+        except Exception as e:
+            self.logger.log_system(f"Error getting recent NUA actions: {e}")
+            return "Action history unavailable - focus on character authenticity!"
+
+    def _call_llm_for_json(self, prompt: str) -> Optional[Dict[str, Any]]:
+        """Calls the OpenRouter LLM and attempts to parse the response as JSON."""
+        # Check if the prompt is in the cache
+        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
+        if prompt_hash in self.response_cache:
+            self.cache_hits += 1
+            return self.response_cache[prompt_hash]
+        
+        self.cache_misses += 1
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                temperature=0.7
+            )
+            response_text = response.choices[0].message.content
+            print(f"{Color.SYSTEM}DEBUG: LLM raw response: {response_text[:300]}...{Color.RESET}")
+            result = extract_and_parse_json(response_text)
+            print(f"{Color.SYSTEM}DEBUG: extract_and_parse_json returned: {type(result)}, value: {str(result)[:200]}...{Color.RESET}")
+            
+            if result is None:
+                print(f"{Color.SYSTEM}DEBUG: result is None, raising JSONDecodeError{Color.RESET}")
+                raise json.JSONDecodeError("Could not extract valid JSON from response", response_text, 0)
+            
+            self.response_cache[prompt_hash] = result
+            
+            return result
+        except json.JSONDecodeError as e:
+            raw_response = response_text if 'response_text' in locals() else 'No response data'
+            error_message = f"JSONDecodeError: {e}\nRaw Response:\n{raw_response}"
+            self.logger.log_system(f"ERROR: {error_message}")
+            return None
+        except Exception as e:
+            error_message = f"An unexpected error occurred with OpenRouter: {e}"
+            self.logger.log_system(f"ERROR: {error_message}")
+            return None
+
+    def determine_nua_proaction(self, proactor: 'Actor', reactor: 'Actor', context_guidance: Dict = None) -> Dict[str, Any]:
+        """
+        Determines the Non-User-Actor's (NUA) proactive action when it wins initiative.
+        INUAs don't take proactive actions - they only react.
+        """
+        # Ensure we have the authoritative scene before building prompts
+        self._refresh_scene_from_tracker()
+        if hasattr(proactor, 'is_inanimate') and proactor.is_inanimate:
+            return None
+            
+        # Only show NUA character sheets - never expose UA (User Actor) sheets to prevent meta-gaming
+        show_reactor_sheet = not getattr(reactor, 'is_user_actor', False)
+        reactor_sheet_dict = reactor.sheet.to_dict() if show_reactor_sheet else None
+        
+        # Check if proactor is a User Actor - if so, don't expose their sheet
+        show_proactor_sheet = not getattr(proactor, 'is_user_actor', False)
+        proactor_sheet_dict = proactor.sheet.to_dict() if show_proactor_sheet else None
+        
+        recent_actions = self._get_recent_nua_actions(proactor.sheet.name)
+        
+        # Debug: Log action history status for production troubleshooting
+        self.logger.log_system(f"DEBUG: Action history for {proactor.sheet.name}: {recent_actions[:100]}...")
+
+        # Use context guidance for escalation analysis if available
+        from llm_agents.nua_context_system import NUAContextTracker, EscalationLevel, ActionType
+        temp_context = NUAContextTracker("temp_analysis")
+        
+        # Get escalation level from context guidance or default to TENSE
+        if context_guidance and 'escalation_level' in context_guidance:
+            escalation_value = context_guidance['escalation_level']
+            escalation_names = ['PEACEFUL', 'TENSE', 'HOSTILE', 'VIOLENT', 'LETHAL']
+            escalation_name = escalation_names[min(escalation_value - 1, 4)] if escalation_value > 0 else 'TENSE'
+            
+            # Create mock escalation object
+            class MockEscalation:
+                def __init__(self, name, value):
+                    self.name = name
+                    self.value = value
+            
+            immediate_escalation = MockEscalation(escalation_name, escalation_value)
+            immediate_action_type = ActionType.PHYSICAL if escalation_value >= 4 else ActionType.SOCIAL
+        else:
+            # Fallback for when no context is available - assume moderate threat
+            immediate_escalation = EscalationLevel.TENSE
+            immediate_action_type = ActionType.SOCIAL
+        
+        # Use immediate escalation analysis if no context guidance provided
+        if not context_guidance:
+            context_guidance = {
+                'escalation_level': immediate_escalation.value,
+                'recommended_action_type': 'cooperative_response' if immediate_escalation.value <= 2 else ('defensive_response' if immediate_escalation.value <= 4 else 'lethal_response'),
+                'context_summary': f"Escalation: {immediate_escalation.name}, Trust: Unknown"
+            }
+        
+        # Enhance context guidance with Four-Mode Narrative Loop guidance if available
+        narrative_guidance_section = ""
+        if context_guidance.get('narrative_mode'):
+            narrative_mode = context_guidance.get('narrative_mode', 'unknown')
+            narrative_intent = context_guidance.get('narrative_intent', 'Natural progression')
+            narrative_tone = context_guidance.get('narrative_tone', 'Balanced')
+            
+            narrative_guidance_section = f"""
+    **📖 FOUR-MODE NARRATIVE GUIDANCE:**
+    Current Mode: {narrative_mode.title()}
+    Intent: {narrative_intent}
+    Tone: {narrative_tone}
+    
+    **MODE-SPECIFIC NPC BEHAVIOR:**"""
+            
+            if narrative_mode.lower() == 'roam':
+                narrative_guidance_section += """
+    - ROAM MODE: Be curious, exploratory, and social
+    - Engage in drift-friendly interactions and conversations
+    - Show interest in discovering new things or people
+    - Avoid aggressive or high-stakes confrontations"""
+            elif narrative_mode.lower() == 'spark':
+                narrative_guidance_section += """
+    - SPARK MODE: Present opportunities or gentle challenges
+    - Create hooks that invite engagement without forcing conflict
+    - Be purposeful but not overwhelming in your approach
+    - Guide toward meaningful interactions or discoveries"""
+            elif narrative_mode.lower() == 'pressure':
+                narrative_guidance_section += """
+    - PRESSURE MODE: Escalate stakes and create complications
+    - Challenge the protagonist's assumptions or plans
+    - Introduce time pressure or difficult moral choices
+    - Be more assertive and create meaningful obstacles"""
+            elif narrative_mode.lower() == 'outcome':
+                narrative_guidance_section += """
+    - OUTCOME MODE: Focus on resolution and consequences
+    - Allow for natural conclusions to conflicts
+    - Provide space for reflection and character growth
+    - Be more measured and thoughtful in responses"""
+        
+        # Build escalation context section with immediate threat emphasis
+        escalation_context = f"""
+    **🚨 IMMEDIATE THREAT ASSESSMENT (CRITICAL):**
+    Proactor's Action Escalation Level: {immediate_escalation.name} ({immediate_escalation.value}/5)
+    Proactor's Action Type: {immediate_action_type.value}
+    
+    **🔥 ESCALATION CONTEXT (CRITICAL):**
+    Current Escalation Level: {context_guidance.get('escalation_level', immediate_escalation.value)}
+    Recommended Action Type: {context_guidance.get('recommended_action_type', 'defensive_response')}
+    Context Summary: {context_guidance.get('context_summary', 'No previous context')}
+    {narrative_guidance_section}
+    
+    ⚠️ **ESCALATION RESPONSE RULES (MANDATORY):**
+    - If escalation is PEACEFUL (1): Casual response, social interaction
+    - If escalation is TENSE (2): Cautious, alert, ready to defend
+    - If escalation is HOSTILE (3): MUST use aggressive actions (attack, threaten, intimidate, physical confrontation)
+    - If escalation is VIOLENT (4): MUST use physical combat, serious defensive measures
+    - If escalation is LETHAL (5): MUST use direct violence or overwhelming force - LIFE OR DEATH SITUATION
+    - HOSTILE+ escalation PROHIBITS passive actions like pure conversation or social manipulation
+    - At HOSTILE+ level, character has moved beyond talking - action must involve threat or force
+    - Deception/cunning can SUPPLEMENT aggressive actions but cannot REPLACE them at HOSTILE+ escalation
+    
+    🚨 **LETHAL SITUATION OVERRIDE:** If proactor action is LETHAL (5), reactor MUST respond with maximum force for survival!
+    """
+
+        prompt = f"""
+    You are the NUA Decision Agent. Your PRIMARY goal is to create an authentic, dynamic character experience that prioritizes NARRATIVE IMMERSION over mechanical optimization.
+
+    **CHARACTER-FIRST DECISION MAKING:**
+    🎭 **PERSONALITY DRIVES ACTION:** {proactor.sheet.name}'s personality traits ({proactor.sheet.personality_traits}) should be the PRIMARY factor in decision-making
+    🎯 **GOALS MATTER:** Consider how this action advances {proactor.sheet.name}'s goals: {proactor.sheet.goals}
+    🔄 **AVOID REPETITION:** Do NOT repeat recent actions. Be creative and dynamic!
+    🎲 **EMBRACE VARIETY:** Mix different approaches - physical, social, psychological, environmental, strategic
+    {escalation_context}
+    
+    **RECENT ACTION HISTORY (AVOID REPEATING):**
+    {recent_actions}
+    
+    **CHARACTER AUTHENTICITY RULES:**
+    1. **Personality First:** What would THIS specific character realistically do based on their traits and background?
+    2. **Goal-Oriented:** How does this action serve their personal objectives?
+    3. **Relationship Context:** Consider existing sympathy/hostility and the nature of the interaction
+    4. **Prioritize Authentic Responses:** Consider cooperation, assistance, or neutral responses before defaulting to opposition
+    5. **Dynamic Behavior:** Vary tactics, approaches, and intensity based on situation evolution
+    6. **Emotional State:** Consider their current status levels as emotional/physical state indicators
+    
+    **ACTION VARIETY GUIDELINES:**
+    - **Cooperative:** Assistance, information sharing, alliance building
+    - **Neutral:** Professional responses, transactional interactions, boundary setting
+    - **Social:** Persuasion, negotiation, conversation, relationship building
+    - **Aggressive:** Direct attacks, intimidation, escalation (when escalation warrants it)
+    - **Defensive:** Blocks, dodges, protective stances when threatened
+    - **Strategic:** Positioning, preparation, resource management, seeking advantage
+    - **Environmental:** Using surroundings, tools, terrain advantages
+    - **Psychological:** Mind games, misdirection, emotional manipulation
+    - **Opportunistic:** Exploiting weaknesses, capitalizing on moments
+    
+    **ESCALATION-DEPENDENT CONSTRAINTS:**
+    - **HOSTILE/VIOLENT ESCALATION:** Aggressive actions may be required for authenticity
+    - **LOWER ESCALATION:** Full variety allowed - prioritize cooperative/neutral/social approaches
+    
+    **Scenario Context:**
+    *   **Scene:** {self.scene_description}
+    *   **Proactor (The one acting):** {proactor.sheet.name}
+    *   **Reactor (The one being acted upon):** {reactor.sheet.name}
+
+    **Character Sheets:**
+    {f'''*   **Proactor Sheet ({proactor.sheet.name}):**
+        ```json
+        {json.dumps(proactor_sheet_dict, indent=2)}
+        ```''' if show_proactor_sheet else f'''*   **Proactor ({proactor.sheet.name}):** [User Actor - sheet hidden for immersion]'''}
+    {f'''*   **Reactor Sheet ({reactor.sheet.name}):**
+        ```json
+        {json.dumps(reactor_sheet_dict, indent=2)}
+        ```''' if show_reactor_sheet else f'''*   **Reactor ({reactor.sheet.name}):** [User Actor - sheet hidden for immersion]'''}
+
+    {f'''**CHARACTER ANALYSIS FOR {proactor.sheet.name}:**
+    - **Personality:** {proactor.sheet.personality_traits}
+    - **Primary Goals:** {proactor.sheet.goals}
+    - **Occupation/Background:** {proactor.sheet.occupation}
+    - **Current Emotional State:** Consider their Spirit level as confidence/morale
+    - **Physical Condition:** Consider their Stamina level as energy/health
+    - **Resource Status:** Consider their Supply level as preparedness/wealth''' if show_proactor_sheet else f'''**PROACTOR ANALYSIS FOR {proactor.sheet.name}:**
+    - [User Actor - detailed analysis hidden for immersion]
+    - You can observe their general actions and behavior, but not their internal stats or motivations'''}
+    
+    **DECISION PROCESS:**
+    1. **Character Motivation:** What would drive {proactor.sheet.name} to act right now?
+    2. **Relationship Assessment:** What is their relationship with the target? (ally, neutral, rival, enemy)
+    3. **Personality Expression:** How would their traits manifest in this situation?
+    4. **Goal Advancement:** Which approach best serves their objectives?
+    5. **Tactical Variety:** What haven't they tried recently that fits their character?
+    6. **Situational Adaptation:** How do current circumstances shape their choice?
+    
+    **Your Task:**
+    Create an action that feels AUTHENTIC to {proactor.sheet.name} as a living character with motivations and relationships. NPCs can be allies, neutrals, or opponents based on context and personality. Prioritize narrative immersion and character consistency over mechanical optimization.
+
+    Return a JSON object with the following structure:
+    
+    {{
+        "action_noun": "A single, simple noun for the action (e.g., 'attack', 'intimidate', 'deceive', 'retreat').",
+        "narrative_description": "A brief, dynamic description of the ATTEMPTED action, starting with a verb. **CRITICAL: Do NOT include outcomes, results, or consequences - only describe the attempt.** **Use {reactor.sheet.name} to refer to the target directly.** Example: 'attempts to lunge at {reactor.sheet.name} with a dagger' or 'tries to whisper lies to {reactor.sheet.name} about their allies'. NEVER describe impacts, hits, misses, damage, or any results.",
+        "character_motivation": "Explain WHY this character would choose this specific action based on their personality and goals.",
+        "justification": "Your reasoning for selecting the specific skill and supplement based on character authenticity and narrative variety.",
+        "utas_factors": {{
+            "exchange_type": "The type of exchange taking place - MUST be one of: SPIRIT, STAMINA, or SUPPLY (based on the primary status being affected).",
+            "s_trait_to_use": "The most relevant S-Trait for the action (SWIFTNESS, SOCIABILITY, STURDINESS, SMARTS, SHADOW).",
+            "s_trait_value": "The value of the S-Trait being used.",
+            "skill": {{"name": "skill_name", "value": skill_value}},
+            "super": {{"name": "super_name", "value": super_value}},
+            "supplement": {{"name": "supplement_name", "value": supplement_value}},
+            "stress_level": "An integer from 1 (very low stress) to 5 (very high stress), representing the action's inherent difficulty.",
+            "status_to_shift": "The primary status of the target you intend to affect (SPIRIT, STAMINA, SUPPLY).",
+            "shift_type": "MUST be either 'Temporary' or 'Lasting' - determines if the effect persists beyond this exchange.",
+            "shift_polarity": "MUST be either 'Additive' or 'Subtractive' - whether the action helps or harms the target.",
+            "self_effects": [ // **CRITICAL**: This field MUST be present and CANNOT be empty for proactor actions! Must contain at least one self-effect.
+                {{
+                    "trigger": "The condition for the effect (Inherent Cost, On Action Success, On Action Failure).",
+                    "status_shifted": "The status on the proactor to be shifted (e.g., 'STAMINA').",
+                    "shift_magnitude": "The size of the shift (e.g., -1).",
+                    "prefix": "A short phrase describing the cause (e.g., 'As a result of the exertion,').",
+                    "description": "A brief description of the effect on the proactor (e.g., 'feels a drain on their energy')."
+                }}
+            ]
+        }}
+    }}
+
+        **CRITICAL FORMATTING REQUIREMENTS:**
+        - ALL nested objects (skill, supplement) MUST be JSON objects with "name" and "value" keys
+        - ALL numeric values MUST be integers, never strings or text
+        - If no skill/supplement applies, use: {{"name": "None", "value": 0}}
+        - NEVER return strings where objects are expected
+
+        **CORRECT EXAMPLES:**
+        "skill": {{"name": "Combat", "value": 3}}
+        "supplement": {{"name": "Sword", "value": 2}}
+        "stress_level": 4
+
+        **SELF-EFFECTS EXAMPLES:**
+        🚨 **CRITICAL: Only ONE self-effect condition applies per NUA proactor per action!** 🚨
+        Choose the most appropriate trigger based on the action's nature:
+
+        **Example 1 - Inherent Cost (Most Common):**
+        "self_effects": [
+            {{
+                "trigger": "Inherent Cost",
+                "status_shifted": "STAMINA",
+                "shift_magnitude": -1,
+                "severity": 2,
+                "severity_justification": "Moderate physical exertion from combat action",
+                "prefix": "From the physical exertion,"
+                "description": "feels their energy drain from the intense effort"
+            }}
+        ]
+
+        **Example 2 - On Action Success:**
+        "self_effects": [
+            {{
+                "trigger": "On Action Success",
+                "status_shifted": "SPIRIT",
+                "shift_magnitude": +1,
+                "severity": 1,
+                "severity_justification": "Minor positive boost from successful action",
+                "prefix": "After successfully completing the action,",
+                "description": "feels a surge of confidence and emotional empowerment"
+            }}
+        ]
+
+        **Example 3 - On Action Failure:**
+        "self_effects": [
+            {{
+                "trigger": "On Action Failure",
+                "status_shifted": "SPIRIT",
+                "shift_magnitude": -2,
+                "severity": 3,
+                "severity_justification": "Significant psychological impact from failed action",
+                "prefix": "From the humiliating failure,",
+                "description": "feels their confidence shatter as their attack is easily deflected"
+            }}
+        ]
+
+        **TRIGGER SELECTION GUIDE:**
+        - **Inherent Cost**: Effect happens only if success and failure are not applicable (physical exertion, resource consumption)
+        - **On Action Success**: Effect only occurs if the action succeeds (confidence boost, overconfidence, empowerment from success)
+        - **On Action Failure**: Effect only occurs if the action fails (embarrassment, injury from failure, wasted resources)
+
+        🚨 **SEVERITY FIELD IS MANDATORY FOR ALL SELF-EFFECTS** 🚨
+        ✅ CORRECT: "severity": 2
+        ✅ CORRECT: "severity": 1  
+        ✅ CORRECT: "severity": 4
+        ❌ WRONG: "severity": null
+        ❌ WRONG: "severity": None
+        ❌ WRONG: Missing severity field entirely
+        
+        **SEVERITY MUST ALWAYS BE AN INTEGER FROM 1 TO 4**
+        If unsure, use 2 as a safe default rather than leaving it empty!
+
+        **INCORRECT EXAMPLES TO AVOID:**
+        "skill": "Combat"  ❌ (should be object)
+        "skill": {{"name": "Combat", "value": "3"}}  ❌ (value should be number)
+        "stress_level": "High"  ❌ (should be number)
+        "self_effects": []  ❌ (NEVER empty for proactor actions!)
+
+        **IF UNCERTAIN:**
+        - For skills: Use {{"name": "None", "value": 0}}
+        - For supplements: Use {{"name": "None", "value": 0}}
+        - For numeric values: Use appropriate integer (1-5)
+
+        **CHARACTER-FIRST CHECKLIST BEFORE RESPONDING:**
+        1. **Character Authenticity:** Does this action feel true to {proactor.sheet.name}'s personality and background?
+        2. **Goal Alignment:** How does this action advance their personal objectives?
+        3. **Action Variety:** Is this different from their recent actions? Does it show tactical/emotional evolution?
+        4. **Narrative Impact:** Will this create interesting story moments rather than just mechanical exchanges?
+        5. **Technical Validation:** Verify all nested objects have both "name" and "value" keys
+        6. **Field Completeness:** Confirm all required fields are present and properly formatted
+        7. **JSON Structure:** Ensure JSON is properly formatted and parseable
+
+        **RESPONSE FORMAT:**
+        - Respond ONLY with valid JSON
+        - No explanatory text before or after the JSON
+        - No markdown code blocks or formatting
+        - Raw JSON object only
+        """
+        data = self._call_llm_for_json(prompt.strip())
+        
+        # SELF-EFFECTS DEBUGGING - Capture raw AI output
+        print(f"{Color.SYSTEM}=== SELF-EFFECTS DEBUG START ==={Color.RESET}")
+        print(f"{Color.SYSTEM}Raw AI Response Type: {type(data)}{Color.RESET}")
+        if data:
+            print(f"{Color.SYSTEM}Raw AI Response Keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}{Color.RESET}")
+            if isinstance(data, dict):
+                utas_factors = data.get('utas_factors', {})
+                print(f"{Color.SYSTEM}UTAS Factors Keys: {list(utas_factors.keys()) if isinstance(utas_factors, dict) else 'Not a dict'}{Color.RESET}")
+                
+                self_effects_raw = utas_factors.get('self_effects') if isinstance(utas_factors, dict) else None
+                print(f"{Color.SYSTEM}Raw self_effects found: {self_effects_raw is not None}{Color.RESET}")
+                print(f"{Color.SYSTEM}Raw self_effects type: {type(self_effects_raw)}{Color.RESET}")
+                print(f"{Color.SYSTEM}Raw self_effects content: {self_effects_raw}{Color.RESET}")
+        else:
+            print(f"{Color.SYSTEM}Raw AI Response is None or empty!{Color.RESET}")
+        
+        # Use universal response normalizer to handle any LLM response format
+        normalized_data = ResponseNormalizer.normalize_proactor_action_response(
+            data, 
+            proactor.sheet.name, 
+            "takes action"
+        )
+        
+        print(f"{Color.SYSTEM}After Normalization:{Color.RESET}")
+        if normalized_data and isinstance(normalized_data, dict):
+            utas_factors_norm = normalized_data.get('utas_factors', {})
+            self_effects_norm = utas_factors_norm.get('self_effects') if isinstance(utas_factors_norm, dict) else None
+            print(f"{Color.SYSTEM}Normalized self_effects found: {self_effects_norm is not None}{Color.RESET}")
+            print(f"{Color.SYSTEM}Normalized self_effects type: {type(self_effects_norm)}{Color.RESET}")
+            print(f"{Color.SYSTEM}Normalized self_effects content: {self_effects_norm}{Color.RESET}")
+        else:
+            print(f"{Color.SYSTEM}Normalized data is None or not a dict!{Color.RESET}")
+        print(f"{Color.SYSTEM}=== SELF-EFFECTS DEBUG END ==={Color.RESET}")
+        
+        if "utas_factors" in normalized_data and "stress_level" in normalized_data["utas_factors"]:
+            stress_level = extract_numeric_value(normalized_data["utas_factors"].get("stress_level", 3), default=3, min_val=1, max_val=5)
+            stress_modifier = max(0, stress_level - 1)
+            normalized_data["utas_factors"]["stress_modifier"] = stress_modifier
+
+        self._enrich_utas_factors_with_actor_data(normalized_data, proactor)
+        # Enforce shared schema (NUA proactor requires self_effects)
+        validate_action_data(normalized_data, require_self_effects=True)
+
+        return normalized_data
+
+    def _enrich_utas_factors_with_actor_data(self, normalized_data: Dict[str, Any], actor: 'Actor') -> None:
+        """Enriches UTAS factors with actual values from the actor's sheet."""
+        from actor_sheet import SFactorType
+        
+        if "utas_factors" not in normalized_data:
+            return
+            
+        factors = normalized_data["utas_factors"]
+        
+        s_trait_name = factors.get("s_trait_to_use")
+        if s_trait_name and s_trait_name != "None":
+            try:
+                # Handle common LLM mistake: SOCIALITY -> SOCIABILITY
+                s_trait_upper = s_trait_name.upper()
+                if s_trait_upper == "SOCIALITY":
+                    s_trait_upper = "SOCIABILITY"
+                    factors["s_trait_to_use"] = "SOCIABILITY"  # Fix the data
+                    
+                s_factor_type = SFactorType[s_trait_upper]
+                actual_value = actor.sheet.s_factors.get_factor(s_factor_type)
+                factors["s_trait_value"] = actual_value
+            except (KeyError, AttributeError) as e:
+                # Fallback to STURDINESS if invalid S-trait provided
+                print(f"Warning: Invalid S-trait '{s_trait_name}': {e}. Defaulting to STURDINESS.")
+                factors["s_trait_to_use"] = "STURDINESS"
+                factors["s_trait_value"] = actor.sheet.s_factors.get_factor(SFactorType.STURDINESS)
+        else:
+            # Fallback to STURDINESS if no S-trait provided
+            print(f"Warning: Missing s_trait_to_use in LLM response. Defaulting to STURDINESS.")
+            factors["s_trait_to_use"] = "STURDINESS"
+            factors["s_trait_value"] = actor.sheet.s_factors.get_factor(SFactorType.STURDINESS)
+            
+        # Handle reactor-specific fields if present
+        if "reactor_reaction_skill" in factors:
+            skill_data = factors.get("reactor_reaction_skill", {})
+            if isinstance(skill_data, dict) and skill_data.get("name") and skill_data.get("name") != "None":
+                skill_name = skill_data["name"]
+                actual_skill_value = actor.sheet.skills.get(skill_name, 0)
+                skill_data["value"] = actual_skill_value
+                factors["skill"] = skill_data
+            else:
+                factors["skill"] = {"name": "None", "value": 0}
+                
+            super_data = factors.get("reactor_reaction_super", {})
+            if isinstance(super_data, dict) and super_data.get("name") and super_data.get("name") != "None":
+                super_name = super_data["name"]
+                actual_super_value = actor.sheet.supers.get(super_name, 0) if actor.sheet.supers else 0
+                super_data["value"] = actual_super_value
+                factors["super"] = super_data
+            else:
+                factors["super"] = {"name": "None", "value": 0}
+                
+            supplement_data = factors.get("reactor_reaction_supplement", {})
+            if isinstance(supplement_data, dict) and supplement_data.get("name") and supplement_data.get("name") != "None":
+                supplement_name = supplement_data["name"]
+                actual_supplement_value = 0
+                supplement_found = False
+                for item in actor.sheet.inventory:
+                    if item.name.lower() == supplement_name.lower():
+                        actual_supplement_value = item.supplement_bonus
+                        supplement_found = True
+                        break
+                
+                if not supplement_found:
+                    factors["supplement"] = {"name": "None", "value": 0}
+                else:
+                    supplement_data["value"] = actual_supplement_value
+                    factors["supplement"] = supplement_data
+            else:
+                factors["supplement"] = {"name": "None", "value": 0}
+                
+            factors["exchange_type"] = factors.get("reactor_primary_defensive_status_type", "N/A")
+            factors["status_to_shift"] = factors.get("reactor_primary_defensive_status_type", "N/A")
+            
+        else:
+            # Handle standard proactor fields
+            skill_data = factors.get("skill", {})
+            if isinstance(skill_data, dict) and skill_data.get("name") and skill_data.get("name") != "None":
+                skill_name = skill_data["name"]
+                actual_skill_value = actor.sheet.skills.get(skill_name, 0)
+                skill_data["value"] = actual_skill_value
+            elif not isinstance(skill_data, dict):
+                factors["skill"] = {"name": "None", "value": 0}
+                
+            super_data = factors.get("super", {})
+            if isinstance(super_data, dict) and super_data.get("name") and super_data.get("name") != "None":
+                super_name = super_data["name"]
+                actual_super_value = actor.sheet.supers.get(super_name, 0) if actor.sheet.supers else 0
+                super_data["value"] = actual_super_value
+            elif not isinstance(super_data, dict):
+                factors["super"] = {"name": "None", "value": 0}
+                
+            supplement_data = factors.get("supplement", {})
+            if isinstance(supplement_data, dict) and supplement_data.get("name") and supplement_data.get("name") != "None":
+                supplement_name = supplement_data["name"]
+                actual_supplement_value = 0
+                supplement_found = False
+                for item in actor.sheet.inventory:
+                    if item.name.lower() == supplement_name.lower():
+                        actual_supplement_value = item.supplement_bonus
+                        supplement_found = True
+                        break
+                
+                if not supplement_found:
+                    factors["supplement"] = {"name": "None", "value": 0}
+                else:
+                    supplement_data["value"] = actual_supplement_value
+            elif not isinstance(supplement_data, dict):
+                factors["supplement"] = {"name": "None", "value": 0}
+
+    def determine_nua_reaction(self, proactor: 'Actor', proactor_action_data: Dict[str, Any], reactor: 'Actor', context_guidance: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Determines the Non-User-Actor's (NUA) reaction to the proactor's action.
+        """
+        # Ensure we have the authoritative scene before building prompts
+        self._refresh_scene_from_tracker()
+        # Analyze proactor's action for immediate escalation assessment
+        from llm_agents.nua_context_system import NUAContextTracker
+        temp_context = NUAContextTracker("temp_analysis")
+        immediate_escalation = temp_context._determine_escalation_from_action(proactor_action_data)
+        immediate_action_type = temp_context._classify_action_type(proactor_action_data.get('narrative_description', ''))
+        
+        print(f"DEBUG REACTOR: Immediate escalation analysis of proactor action: {immediate_escalation.name}")
+        print(f"DEBUG REACTOR: Immediate action type: {immediate_action_type.value}")
+        
+        # Only show NUA character sheets - never expose UA (User Actor) sheets to prevent meta-gaming
+        show_reactor_sheet = not getattr(reactor, 'is_user_actor', False)
+        reactor_sheet_dict = reactor.sheet.to_dict() if show_reactor_sheet else None
+        
+        # Check if proactor is a User Actor - if so, don't expose their sheet details
+        show_proactor_details = not getattr(proactor, 'is_user_actor', False)
+
+        # Enhance context guidance with Four-Mode Narrative Loop guidance if available
+        narrative_guidance_section = ""
+        if context_guidance and context_guidance.get('narrative_mode'):
+            narrative_mode = context_guidance.get('narrative_mode', 'unknown')
+            narrative_intent = context_guidance.get('narrative_intent', 'Natural progression')
+            narrative_tone = context_guidance.get('narrative_tone', 'Balanced')
+            
+            narrative_guidance_section = f"""
+        **📖 FOUR-MODE NARRATIVE GUIDANCE:**
+        Current Mode: {narrative_mode.title()}
+        Intent: {narrative_intent}
+        Tone: {narrative_tone}
+        
+        **MODE-SPECIFIC REACTION BEHAVIOR:**"""
+            
+            if narrative_mode.lower() == 'roam':
+                narrative_guidance_section += """
+        - ROAM MODE: React with curiosity and openness
+        - Engage in exploratory dialogue or cooperative responses
+        - Avoid escalating conflicts unnecessarily
+        - Show interest in understanding rather than dominating"""
+            elif narrative_mode.lower() == 'spark':
+                narrative_guidance_section += """
+        - SPARK MODE: React in ways that create opportunities
+        - Present counter-offers or alternative approaches
+        - Create hooks for further engagement
+        - Be purposeful but not overly aggressive"""
+            elif narrative_mode.lower() == 'pressure':
+                narrative_guidance_section += """
+        - PRESSURE MODE: React with increased stakes
+        - Escalate appropriately to create meaningful tension
+        - Challenge the proactor's approach or assumptions
+        - Create complications that drive the story forward"""
+            elif narrative_mode.lower() == 'outcome':
+                narrative_guidance_section += """
+        - OUTCOME MODE: React with resolution in mind
+        - Allow for natural conclusions to emerge
+        - Focus on consequences and character growth
+        - Be more measured and thoughtful in responses"""
+
+        prompt = f"""
+        You are the NUA Decision Agent. Your task is to determine a realistic, character-driven reaction for {reactor.sheet.name} to {proactor.sheet.name}'s action. This NUA is a living character with personality, goals, and motivations who can respond with cooperation, neutrality, or opposition based on context and relationships.
+
+        **🚨 IMMEDIATE THREAT ASSESSMENT:**
+        Proactor's Action Escalation Level: {immediate_escalation.name} ({immediate_escalation.value}/5)
+        Proactor's Action Type: {immediate_action_type.value}
+        {narrative_guidance_section}
+        
+        **ESCALATION RESPONSE GUIDELINES:**
+        - PEACEFUL (1): Casual response, social interaction
+        - TENSE (2): Cautious, alert, ready to defend
+        - HOSTILE (3): Aggressive response, intimidation, threats
+        - VIOLENT (4): Physical combat, serious defensive measures
+        - LETHAL (5): Life-or-death response, maximum force, survival mode
+        
+        **CHARACTER-DRIVEN REACTION PRINCIPLES:**
+        1. **Match Relationship Context:** Consider existing sympathy/hostility and the nature of the interaction
+        2. **Embody the Character:** React based on {reactor.sheet.name}'s personality traits, goals, and current emotional state
+        3. **Prioritize Authentic Responses:** Consider cooperation, assistance, or neutral responses before defaulting to opposition
+        4. **Use Character Goals:** How does this situation help or hinder {reactor.sheet.name}'s objectives?
+        5. **Match Escalation Appropriately:** Only escalate to aggression when the situation truly warrants it
+        6. **Embrace Relationship Diversity:** NPCs can be helpful, neutral, or challenging based on context and personality
+
+        **REACTION VARIETY GUIDELINES:**
+        - **Cooperative:** Assistance, information sharing, alliance building
+        - **Neutral:** Professional responses, transactional interactions, boundary setting
+        - **Social:** Persuasion, negotiation, conversation, relationship building
+        - **Aggressive:** Direct attacks, intimidation, escalation (when escalation warrants it)
+        - **Defensive:** Blocks, dodges, protective stances when threatened
+        - **Strategic:** Repositioning, creating distance, seeking advantage
+        - **Environmental:** Using surroundings, tools, terrain
+        - **Psychological:** Mind games, misdirection, emotional manipulation
+        - **Opportunistic:** Exploiting weaknesses, turning situations to advantage
+
+        **Scenario Context:**
+        *   **Scene:** {self.scene_description}
+        *   **Proactor (The NUA taking action):** {proactor.sheet.name}
+        *   **Reactor (The target of the action):** {reactor.sheet.name}
+        {self._get_historical_context()}
+
+        **Proactor's Action Details:**
+        ```json
+        {json.dumps(proactor_action_data, indent=2)}
+{{ ... }}
+        ```
+
+        {f'''**Reactor's Character Sheet:**
+        ```json
+        {json.dumps(reactor_sheet_dict, indent=2)}
+        ```''' if show_reactor_sheet else f'''**Reactor ({reactor.sheet.name}):** [User Actor - sheet hidden for immersion]'''}
+
+        {f'''**PROACTOR INFORMATION ({proactor.sheet.name}):**
+        - **Personality Traits:** {proactor.sheet.personality_traits}
+        - **Goals:** {proactor.sheet.goals}
+        - **Occupation:** {proactor.sheet.occupation}
+        - **Observable Behavior:** Based on their recent actions and demeanor''' if show_proactor_details else f'''**PROACTOR INFORMATION ({proactor.sheet.name}):**
+        - [User Actor - detailed information hidden for immersion]
+        - You can observe their actions and general behavior, but not their internal motivations or stats'''}
+
+        {f'''**CHARACTER ANALYSIS FOR {reactor.sheet.name}:**
+        - **Personality Traits:** {reactor.sheet.personality_traits}
+        - **Goals:** {reactor.sheet.goals}
+        - **Occupation:** {reactor.sheet.occupation}
+        - **Strongest Skills:** {sorted(reactor.sheet.skills.items(), key=lambda x: x[1], reverse=True)[:3]}
+        - **Current Status:** Consider their current stamina, spirit, and supply levels''' if show_reactor_sheet else f'''**REACTOR ANALYSIS FOR {reactor.sheet.name}:**
+        - [User Actor - detailed analysis hidden for immersion]
+        - You can observe their general actions and behavior, but not their internal stats or motivations'''}
+
+        **REACTION DECISION PROCESS:**
+        1. **Assess Threat Level:** How dangerous/beneficial is the proactor's action to {reactor.sheet.name}?
+        2. **Character Response:** What would {reactor.sheet.name} realistically do based on their personality and goals?
+        3. **Tactical Choice:** Which approach (aggressive/defensive/social/strategic) fits their skills and situation?
+        4. **Resource Management:** What can they afford to spend (stamina/spirit/supply)?
+
+        **Your Task - REACTOR INTERPRETATION (UTAS OBJECTIVE Step 4):**
+        Create a character-driven reaction that feels authentic to {reactor.sheet.name}. Consider both immediate tactical response and any secondary effects that align with their personality and objectives.
+
+        **🚨 CRITICAL: ATTEMPT ONLY - NO OUTCOMES**
+        - Describe what {reactor.sheet.name} is TRYING to do, not what happens
+        - Do NOT include results, success, failure, or consequences in the narrative
+        - Do NOT describe bullets hitting, missing, grazing, or any impact results
+        - Do NOT describe whether attacks connect, defenses work, or any outcomes
+        - The math will determine if the attempt succeeds or fails
+        - Focus ONLY on the character's intention, movement, and effort
+
+        **REACTION COMPONENTS:**
+        - **Primary Action:** The main thing {reactor.sheet.name} is attempting (attack, defend, manipulate, etc.)
+        - **Skill Selection:** Choose from their actual skills based on the reaction type
+        - **Secondary Effects:** Additional consequences that make sense for this character's approach
+
+        Return a JSON object with the following structure:
+
+        {{
+            "action_noun": "A single, simple noun for the reaction (e.g., 'dodge', 'block', 'counter').",
+        "narrative_description": "A brief, dynamic description of the ATTEMPTED reaction, starting with a verb. **CRITICAL: Do NOT include outcomes, results, or consequences - only describe the attempt.** **Use {proactor.sheet.name} to refer to the proactor.** Example: 'attempts to dodge {proactor.sheet.name}'s attack' or 'tries to raise shield against {proactor.sheet.name}'. NEVER describe bullets hitting, missing, grazing, impacts, or any results.",
+            "justification": "Your reasoning for this specific reaction choice based on {reactor.sheet.name}'s personality, goals, and tactical situation. Explain why this character would choose THIS approach over alternatives.",
+            "utas_factors": {{
+                "reactor_reaction_description": "A concise narrative description of what the Reactor is trying to do (e.g., 'Laugh off the insult and use the momentum to bolster their own confidence').",
+                "reactor_reaction_skill": {{"name": "skill_name", "value": skill_value}},
+                "reactor_reaction_s_trait": "The primary S-Trait supporting the reaction (SWIFTNESS, SOCIABILITY, STURDINESS, SMARTS, SHADOW).",
+                "reactor_reaction_super": {{"name": "super_name", "value": super_value}},
+                "reactor_reaction_supplement": {{"name": "supplement_name", "value": supplement_value}},
+                "reactor_primary_defensive_status_type": "The Status (SPIRIT, STAMINA, SUPPLY) that best represents the resilience the Reactor is drawing upon.",
+                "has_secondary_effect": "TRUE or FALSE - Does the reaction intend to do anything more than simply negate the Proactor's action?",
+                "secondary_effect_justification": "Analysis explaining the Has_Secondary_Effect determination (e.g., 'The reaction includes empower me, which is an effect beyond pure defense. Therefore, Has_Secondary_Effect is TRUE.').",
+                "secondary_effect_target": "If Has_Secondary_Effect is TRUE: 'Proactor' or 'Self' - Who is the intended recipient of this secondary effect?",
+                "secondary_effect_target_justification": "If Has_Secondary_Effect is TRUE: Justification for the target (e.g., 'The effect empower me is targeted at the Reactor. The target is Self.').",
+                "secondary_effect_target_status_type": "If Has_Secondary_Effect is TRUE: Which Status (SPIRIT, STAMINA, SUPPLY) is being targeted by the secondary effect?",
+                "secondary_effect_target_status_justification": "If Has_Secondary_Effect is TRUE: Justification for the status (e.g., 'Bolstering confidence relates to mental fortitude. The target status is Spirit.').",
+                "secondary_effect_shift_polarity_numeric": "If Has_Secondary_Effect is TRUE: '+1' (Additive) or '-1' (Subtractive) - Is the effect beneficial or harmful?",
+                "secondary_effect_shift_polarity_justification": "If Has_Secondary_Effect is TRUE: Justification for polarity (e.g., 'The intent is to gain a benefit, so the polarity is Additive (+1).').",
+                "secondary_effect_shift_type_multiplier": "If Has_Secondary_Effect is TRUE: '1.0' (Lasting) or '0.5' (Temporary) - Is the effect permanent or temporary?",
+                "secondary_effect_shift_type_justification": "If Has_Secondary_Effect is TRUE: Justification for type (e.g., 'A quick boost of confidence from laughing off an insult is a fleeting feeling. The shift type is Temporary (0.5).').",
+                "stress_level": "An integer from 1 (very low stress) to 5 (very high stress), representing the reaction's inherent difficulty.",
+                "self_effects": [ // **CRITICAL**: This field MUST be present and CANNOT be empty for proactor actions! Must contain at least one self-effect.
+                    {{
+                        "trigger": "The condition for the effect (Inherent Cost, On Action Success, On Action Failure).",
+                        "status_shifted": "The status on the reactor to be shifted (e.g., 'STAMINA').",
+                        "shift_magnitude": "The size of the shift (e.g., -1).",
+                        "prefix": "A short phrase describing the cause (e.g., 'As a result of the exertion,').",
+                        "description": "A brief description of the effect on the reactor (e.g., 'feels a drain on their energy')."
+                    }}
+                ]
+            }}
+        }}
+
+        **CRITICAL FORMATTING REQUIREMENTS:**
+        - ALL nested objects (skill, supplement) MUST be JSON objects with "name" and "value" keys
+        - ALL numeric values MUST be integers, never strings or text
+        - If no skill/supplement applies, use: {{"name": "None", "value": 0}}
+        - NEVER return strings where objects are expected
+
+        **CORRECT EXAMPLES:**
+        "skill": {{"name": "Defense", "value": 3}}
+        "supplement": {{"name": "Shield", "value": 2}}
+        "stress_level": 3
+
+        **INCORRECT EXAMPLES TO AVOID:**
+        "skill": "Defense"  ❌ (should be object)
+        "skill": {{"name": "Defense", "value": "3"}}  ❌ (value should be number)
+        "stress_level": "Medium"  ❌ (should be number)
+
+        **IF UNCERTAIN:**
+        - For skills: Use {{"name": "None", "value": 0}}
+        - For supplements: Use {{"name": "None", "value": 0}}
+        - For numeric values: Use appropriate integer (1-5)
+
+        **BEFORE RESPONDING:**
+        1. Verify all nested objects have both "name" and "value" keys
+        2. Confirm all numeric fields contain integers, not strings
+        3. Check that no required field is missing or null
+        4. **Confirm `self_effects` is present and contains at least one effect (NEVER empty for proactor actions)**
+        5. **Include ALL justification fields:** s_trait_justification, skill_justification, stress_justification, shift_type_justification, shift_polarity_justification, self_effects_justification
+        6. Ensure JSON is properly formatted and parseable
+
+        **RESPONSE FORMAT:**
+        - Respond ONLY with valid JSON
+        - No explanatory text before or after the JSON
+        - No markdown code blocks or formatting
+        - Raw JSON object only
+        """
+        
+        data = self._call_llm_for_json(prompt.strip())
+        
+        normalized_data = ResponseNormalizer.normalize_reactor_response(
+            data, 
+            reactor.sheet.name, 
+            "reacts defensively"
+        )
+        
+        self._enrich_utas_factors_with_actor_data(normalized_data, reactor)
+        
+        return normalized_data
+
+    def determine_inua_reaction(self, proactor: 'Actor', proactor_action_data: Dict[str, Any], reactor: 'Actor') -> Optional[Dict[str, Any]]:
+        """
+        Determines how an Inanimate Non-User Actor (INUA) reacts to a proactor's action.
+        INUAs don't take independent actions - they provide passive resistance based on their properties.
+        """
+        self.logger.log_system(f"Determining INUA reaction for {reactor.sheet.name}...")
+        
+        import random
+        serendipity = random.randint(1, 6) + random.randint(1, 6) - 7
+        
+        # Build the INUA reaction prompt
+        prompt = self._build_inua_reaction_prompt(proactor, proactor_action_data, reactor, serendipity)
+        
+        # Get LLM response
+        response_data = self._call_llm_for_json(prompt)
+        if not response_data:
+            self.logger.log_system(f"ERROR: Could not get INUA reaction for {reactor.sheet.name}")
+            return None
+        
+        normalized_data = ResponseNormalizer.normalize_proactor_action_response(
+            response_data, 
+            reactor.sheet.name, 
+            "provides passive resistance"
+        )
+        
+        if not normalized_data:
+            self.logger.log_system(f"ERROR: Could not normalize INUA reaction for {reactor.sheet.name}")
+            return None
+        
+        self._enrich_utas_factors_with_actor_data(normalized_data, reactor)
+        
+        self.logger.log_system(f"Successfully determined INUA reaction for {reactor.sheet.name}")
+        return normalized_data
+    
+    def _build_inua_reaction_prompt(self, proactor: 'Actor', proactor_action_data: Dict[str, Any], reactor: 'Actor', serendipity: int) -> str:
+        """
+        Builds the prompt for determining how an INUA reacts to a proactor's action.
+        """
+        proactor_action = proactor_action_data.get('narrative_description', 'acts')
+        
+        return f"""
+You are determining how an Inanimate Non-User Actor (INUA) responds to a character's action in a simulation.
+
+**Scene Context:**
+{self.scene_description}
+
+**Proactor Action:**
+{proactor.sheet.name} {proactor_action}
+
+**INUA Being Acted Upon:**
+- Name: {reactor.sheet.name}
+- Type: {reactor.sheet.occupation}
+- Nature: {reactor.sheet.personality_traits.get('internal', 'inanimate')}
+- Appearance: {reactor.sheet.personality_traits.get('external', 'static')}
+- Skills: {reactor.sheet.skills}
+- Components: {[item.name for item in reactor.sheet.inventory]}
+
+**INUA Reaction Guidelines:**
+INUAs don't take independent actions - they provide passive resistance or response based on:
+1. **Physical Properties**: How sturdy/fragile is it? Does it break, bend, or resist?
+2. **Complexity**: Does it have mechanisms, locks, or systems that activate?
+3. **Environmental Response**: Does it create hazards, obstacles, or opportunities?
+4. **Interaction Skills**: Which of the INUA's skills are relevant to the proactor's approach?
+
+**Examples:**
+- Door with lock → Tests lockpicking skill, may jam or open
+- Boulder → Tests strength/climbing, may shift or hold firm
+- Security system → Tests hacking/stealth, may trigger alarms
+- Bridge → Tests balance/engineering, may collapse or hold
+
+**Required Response Format:**
+Provide a JSON response with the INUA's passive reaction:
+
+{{
+    "action_noun": "Resist",
+    "narrative_description": "Brief description of how the INUA responds (e.g., 'The ancient lock clicks and resists', 'The boulder shifts slightly but holds firm')",
+    "utas_factors": {{
+        "exchange_type": "STAMINA",
+        "s_trait_to_use": "{reactor.sheet.get_highest_s_factor_name()}",
+        "s_trait_value": "Actual S-Factor value from INUA sheet",
+        "skill": {{
+            "name": "Most relevant interaction skill from INUA's skill list",
+            "value": "Skill difficulty value (1-3)"
+        }},
+        "super": {{
+            "name": "None",
+            "value": 0
+        }},
+        "supplement": {{
+            "name": "Most relevant component/part from INUA's inventory",
+            "value": "Component effectiveness (1-3)"
+        }},
+        "serendipity": {serendipity},
+        "stress_level": 3,
+        "status_to_shift": "STAMINA",
+        "shift_type": "Temporary",
+        "shift_polarity": "Subtractive",
+        "self_effects": [
+            {{
+                "trigger": "Inherent Cost",
+                "status_shifted": "STAMINA",
+                "shift_magnitude": -1,
+                "severity": 1,
+                "severity_justification": "Minor wear from interaction",
+                "prefix": "From the strain of resisting,",
+                "description": "shows signs of wear from the interaction"
+            }}
+        ]
+    }}
+}}
+
+**CRITICAL Requirements:**
+- INUAs provide RESISTANCE, not active attacks
+- Use the INUA's actual skills and components from their sheet
+- Self-effects represent wear/damage to the INUA itself
+- Shift magnitude reflects how difficult the INUA is to overcome
+- Narrative should be passive/reactive, not active
+- action_noun should always be "Resist" for INUAs
+- exchange_type and status_to_shift should typically be "STAMINA"
+
+Respond with ONLY the JSON object.
+        """.strip()

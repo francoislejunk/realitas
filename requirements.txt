@@ -1,0 +1,9 @@
+# c:\Users\darre\OneDrive\Desktop\Realitas Neo\requirements.txt
+
+openai
+python-dotenv
+pydantic-settings
+colorama==0.4.6
+numpy>=1.24.0  # Required for RAG system embeddings
+rich>=13.0.0   # Required for real-time spatial display
+pygame>=2.5.0  # Required for spatial map visualization
