@@ -1,0 +1,28 @@
+{
+  "world": {
+    "name": "Realitas Dev Shard",
+    "status": "active-simulation",
+    "promise": "AI Reality Simulator",
+    "location": "Threshold Harbor",
+    "world_time": {
+      "day": 1,
+      "hour": 6,
+      "minute": 0
+    }
+  },
+  "actors": [
+    {
+      "id": "vessel-dev",
+      "name": "Unassigned Vessel",
+      "role": "vessel",
+      "state": "awaiting embodiment"
+    }
+  ],
+  "recent_events": [
+    {
+      "type": "deployment",
+      "summary": "The Realitas dev shard came online behind the Cloudflare tunnel.",
+      "importance": 5
+    }
+  ]
+}

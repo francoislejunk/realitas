@@ -1,17 +1,30 @@
+const fs = require('fs');
 const http = require('http');
+const path = require('path');
 
 const port = Number(process.env.PORT || 3000);
 const version = process.env.REALITAS_VERSION || 'dev';
+const worldStateFile = process.env.REALITAS_WORLD_STATE_FILE || path.join(process.cwd(), 'data', 'world-state.json');
 
-function worldSnapshot() {
+const defaultWorldState = {
+  world: {
+    name: 'Realitas Dev Shard',
+    status: 'online',
+    promise: 'AI Reality Simulator',
+  },
+  actors: [],
+  recent_events: [],
+};
+
+function withDefaults(rawState = {}, source) {
+  const world = { ...defaultWorldState.world, ...(rawState.world || {}) };
   return {
     service: 'realitas',
     version,
-    world: {
-      name: 'Realitas Dev Shard',
-      status: 'online',
-      promise: 'AI Reality Simulator',
-    },
+    source,
+    world,
+    actors: Array.isArray(rawState.actors) ? rawState.actors : [],
+    recent_events: Array.isArray(rawState.recent_events) ? rawState.recent_events : [],
     pillars: ['Immersive', 'Intuitive', 'Addictive'],
     runtime: {
       ingress: 'cloudflare-tunnel',
@@ -21,7 +34,34 @@ function worldSnapshot() {
   };
 }
 
-const page = `<!DOCTYPE html>
+function worldSnapshot() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(worldStateFile, 'utf8'));
+    return withDefaults(parsed, { kind: 'file', path: worldStateFile });
+  } catch (error) {
+    return withDefaults(defaultWorldState, { kind: 'fallback', reason: error.code || 'parse_error' });
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderPage() {
+  const snapshot = worldSnapshot();
+  const worldName = escapeHtml(snapshot.world.name);
+  const status = escapeHtml(snapshot.world.status);
+  const location = escapeHtml(snapshot.world.location || 'awaiting vessel');
+  const actorCount = snapshot.actors.length;
+  const eventCount = snapshot.recent_events.length;
+  const sourceLabel = snapshot.source.kind === 'file' ? 'persisted state' : 'fallback state';
+
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -66,16 +106,20 @@ const page = `<!DOCTYPE html>
 <body>
   <main class="container">
     <h1>🌀 Realitas</h1>
-    <p>AI Reality Simulator</p>
-    <p class="tag">Pipeline online · ${version}</p>
+    <p>${escapeHtml(snapshot.world.promise)}</p>
+    <p class="tag">Pipeline online · ${escapeHtml(version)} · ${escapeHtml(sourceLabel)}</p>
     <section class="world-grid" aria-label="Realitas runtime state">
-      <article class="card"><div class="label">World</div><div class="value">Realitas Dev Shard</div></article>
-      <article class="card"><div class="label">Ingress</div><div class="value">dev.subrealiti.es</div></article>
+      <article class="card"><div class="label">World</div><div class="value">${worldName}</div></article>
+      <article class="card"><div class="label">Status</div><div class="value">${status}</div></article>
+      <article class="card"><div class="label">Location</div><div class="value">${location}</div></article>
+      <article class="card"><div class="label">Actors</div><div class="value">${actorCount}</div></article>
+      <article class="card"><div class="label">Recent Events</div><div class="value">${eventCount}</div></article>
       <article class="card"><div class="label">Pillars</div><div class="value">Immersive · Intuitive · Addictive</div></article>
     </section>
   </main>
 </body>
 </html>`;
+}
 
 const server = http.createServer((req, res) => {
   if (req.url === '/health' || req.url === '/healthz') {
@@ -91,7 +135,7 @@ const server = http.createServer((req, res) => {
   }
 
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-  res.end(page);
+  res.end(renderPage());
 });
 
 server.listen(port, '0.0.0.0', () => {
