@@ -4,6 +4,7 @@ set -euo pipefail
 # Realitas deploy helper.
 # Default mode is read-only preflight. --apply mutates the VPS only when
 # REALITAS_DEPLOY_CONFIRM=deploy-realitas is also set.
+# Nginx replacement is separately gated by REALITAS_ENABLE_NGINX=1.
 
 mode="preflight"
 case "${1:---preflight}" in
@@ -24,10 +25,11 @@ Environment:
   REALITAS_HEALTH_URL        default: http://127.0.0.1:3000/health
   REALITAS_START_CMD         default: /usr/bin/node server.js
   REALITAS_DEPLOY_CONFIRM    must equal deploy-realitas for --apply
+  REALITAS_ENABLE_NGINX      set to 1 to replace nginx routing after backup
 
 --preflight is read-only: verifies SSH, remote tools, service state, and health.
 --apply backs up the remote app, deploys the current commit, restarts systemd,
-configures nginx to preserve /webhook/ and expose Realitas, then probes health.
+and probes local service health. Nginx is only changed when REALITAS_ENABLE_NGINX=1.
 USAGE
     exit 0
     ;;
@@ -46,6 +48,7 @@ repo_url="${REALITAS_REPO_URL:-$repo_url_default}"
 branch="${REALITAS_BRANCH:-$branch_default}"
 health_url="${REALITAS_HEALTH_URL:-http://127.0.0.1:3000/health}"
 start_cmd="${REALITAS_START_CMD:-/usr/bin/node server.js}"
+enable_nginx="${REALITAS_ENABLE_NGINX:-0}"
 
 if [[ -z "$repo_url" ]]; then
   echo "REALITAS_REPO_URL is required when origin is unavailable" >&2
@@ -64,6 +67,7 @@ echo "remote_dir=$remote_dir"
 echo "service=$service"
 echo "repo=$repo_url branch=$branch"
 echo "health_url=$health_url"
+echo "enable_nginx=$enable_nginx"
 
 "${ssh_base[@]}" "REALITAS_REMOTE_DIR='$remote_dir' REALITAS_SERVICE_NAME='$service' REALITAS_HEALTH_URL='$health_url' bash -s" <<'REMOTE_PREFLIGHT'
 set -euo pipefail
@@ -95,10 +99,11 @@ commit="$(git rev-parse HEAD)"
 echo "applying commit $commit to ${user}@${host}:${remote_dir}"
 
 "${ssh_base[@]}" \
-  "REALITAS_REMOTE_DIR='$remote_dir' REALITAS_SERVICE_NAME='$service' REALITAS_REPO_URL='$repo_url' REALITAS_BRANCH='$branch' REALITAS_COMMIT='$commit' REALITAS_START_CMD='$start_cmd' bash -s" <<'REMOTE_APPLY'
+  "REALITAS_REMOTE_DIR='$remote_dir' REALITAS_SERVICE_NAME='$service' REALITAS_REPO_URL='$repo_url' REALITAS_BRANCH='$branch' REALITAS_COMMIT='$commit' REALITAS_START_CMD='$start_cmd' REALITAS_ENABLE_NGINX='$enable_nginx' bash -s" <<'REMOTE_APPLY'
 set -euo pipefail
 umask 022
 backup_dir="${REALITAS_REMOTE_DIR}.backup.$(date -u +%Y%m%dT%H%M%SZ)"
+nginx_backup_dir="/root/realitas-nginx-backup.$(date -u +%Y%m%dT%H%M%SZ)"
 if [[ -e "$REALITAS_REMOTE_DIR" ]]; then
   echo "remote: backing up $REALITAS_REMOTE_DIR to $backup_dir"
   cp -a "$REALITAS_REMOTE_DIR" "$backup_dir"
@@ -112,8 +117,11 @@ git fetch origin "$REALITAS_BRANCH"
 git checkout "$REALITAS_BRANCH"
 git reset --hard "$REALITAS_COMMIT"
 
-if [[ -f requirements.txt ]]; then
-  python3 -m venv .venv
+if [[ "${REALITAS_DEPLOY_INSTALL_PYTHON:-0}" == "1" && -f requirements.txt ]]; then
+  if ! python3 -m venv .venv; then
+    echo "remote: python venv unavailable; install python3-venv or leave REALITAS_DEPLOY_INSTALL_PYTHON=0 for the Node web shell" >&2
+    exit 4
+  fi
   . .venv/bin/activate
   python -m pip install --upgrade pip
   python -m pip install -r requirements.txt pytest
@@ -152,7 +160,12 @@ systemctl daemon-reload
 systemctl restart "$REALITAS_SERVICE_NAME"
 systemctl --no-pager --full status "$REALITAS_SERVICE_NAME" | sed -n '1,80p'
 
-cat > /etc/nginx/sites-available/realitas <<'NGINX'
+if [[ "$REALITAS_ENABLE_NGINX" == "1" ]]; then
+  echo "remote: backing up nginx site config to $nginx_backup_dir"
+  install -d -m 0700 "$nginx_backup_dir"
+  cp -a /etc/nginx/sites-available "$nginx_backup_dir/" 2>/dev/null || true
+  cp -a /etc/nginx/sites-enabled "$nginx_backup_dir/" 2>/dev/null || true
+  cat > /etc/nginx/sites-available/realitas <<'NGINX'
 server {
     listen 80;
     server_name _;
@@ -173,13 +186,18 @@ server {
     }
 }
 NGINX
-ln -sfn /etc/nginx/sites-available/realitas /etc/nginx/sites-enabled/realitas
-rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/gordon
-nginx -t
-systemctl reload nginx
+  ln -sfn /etc/nginx/sites-available/realitas /etc/nginx/sites-enabled/realitas
+  rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/gordon
+  nginx -t
+  systemctl reload nginx
+else
+  echo "remote: nginx unchanged; set REALITAS_ENABLE_NGINX=1 to replace routing after review"
+fi
 
 echo "remote: app rollback path: copy $backup_dir back to $REALITAS_REMOTE_DIR and systemctl restart $REALITAS_SERVICE_NAME"
-echo "remote: nginx rollback path: restore previous /etc/nginx/sites-enabled/gordon if needed, then nginx -t && systemctl reload nginx"
+if [[ "$REALITAS_ENABLE_NGINX" == "1" ]]; then
+  echo "remote: nginx rollback path: restore sites-available/sites-enabled from $nginx_backup_dir, then nginx -t && systemctl reload nginx"
+fi
 REMOTE_APPLY
 
 "${ssh_base[@]}" "curl -fsS -m 10 '$health_url' >/dev/null"

@@ -2,9 +2,16 @@ name: Deploy
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+    inputs:
+      confirm:
+        description: "Type deploy-realitas to run the mutating VPS deploy"
+        required: true
+        type: string
+      enable_nginx:
+        description: "Also replace nginx routing after backing up existing config"
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: realitas-deploy
@@ -12,6 +19,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ inputs.confirm == 'deploy-realitas' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -25,6 +33,7 @@ jobs:
       REALITAS_HEALTH_URL: http://127.0.0.1:3000/health
       REALITAS_START_CMD: /usr/bin/node server.js
       REALITAS_DEPLOY_CONFIRM: deploy-realitas
+      REALITAS_ENABLE_NGINX: ${{ inputs.enable_nginx && '1' || '0' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,5 +66,9 @@ jobs:
       - name: Deploy to realitas-dev
         run: ./scripts/deploy-realitas.sh --apply
 
-      - name: Probe live health through VPS public HTTP
+      - name: Probe local service health over SSH path
+        run: ./scripts/deploy-realitas.sh --preflight
+
+      - name: Probe public health after nginx replacement
+        if: ${{ inputs.enable_nginx }}
         run: ./scripts/health-probe.sh http://178.104.92.122/health
