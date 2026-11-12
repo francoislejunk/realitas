@@ -18,19 +18,19 @@ class OpenRouterConfig:
     """Configuration class for OpenRouter API settings with role-based model selection."""
     
     # Role-based model configuration
-    # All roles use Gemini Flash 3 for speed
+    # All roles use DeepSeek V4.1 Flash (Francois current model, 2026-11-12)
     ROLE_MODELS = {
-        "narration": "google/gemini-3-flash-preview",
-        "spark_generation": "google/gemini-3-flash-preview",
-        "decision_making": "google/gemini-3-flash-preview",
-        "scene_creation": "google/gemini-3-flash-preview",
-        "action_interpretation": "google/gemini-3-flash-preview",
-        "coordination": "google/gemini-3-flash-preview",
-        "data_management": "google/gemini-3-flash-preview",
-        "output_formatting": "google/gemini-3-flash-preview",
-        "memory_creation": "google/gemini-3-flash-preview",
-        "layout_generation": "google/gemini-3-flash-preview",
-        "default": "google/gemini-3-flash-preview"
+        "narration": "deepseek/deepseek-v4.1-flash-1017",
+        "spark_generation": "deepseek/deepseek-v4.1-flash-1017",
+        "decision_making": "deepseek/deepseek-v4.1-flash-1017",
+        "scene_creation": "deepseek/deepseek-v4.1-flash-1017",
+        "action_interpretation": "deepseek/deepseek-v4.1-flash-1017",
+        "coordination": "deepseek/deepseek-v4.1-flash-1017",
+        "data_management": "deepseek/deepseek-v4.1-flash-1017",
+        "output_formatting": "deepseek/deepseek-v4.1-flash-1017",
+        "memory_creation": "deepseek/deepseek-v4.1-flash-1017",
+        "layout_generation": "deepseek/deepseek-v4.1-flash-1017",
+        "default": "deepseek/deepseek-v4.1-flash-1017"
     }
     
     # OpenRouter API settings

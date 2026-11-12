@@ -280,7 +280,7 @@ Respond with ONLY a number (the estimated minutes). Examples:
 Estimated minutes:"""
 
         response = self.client.chat.completions.create(
-            model="deepseek/deepseek-r1",
+            model="deepseek/deepseek-v4.1-flash-1017",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=50,
             temperature=0.3

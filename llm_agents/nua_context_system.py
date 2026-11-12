@@ -89,7 +89,7 @@ Respond with ONLY the action type name: SOCIAL, THREATENING, PHYSICAL, DEFENSIVE
 
         try:
             response = self.client.chat.completions.create(
-                model="deepseek/deepseek-chat-v3-0324",
+                model="deepseek/deepseek-v4.1-flash-1017",
                 messages=[{"role": "user", "content": classification_prompt}],
                 temperature=0.1
             )
@@ -150,7 +150,7 @@ Respond with ONLY the escalation level name: PEACEFUL, TENSE, HOSTILE, VIOLENT, 
 
         try:
             response = self.client.chat.completions.create(
-                model="deepseek/deepseek-chat-v3-0324",
+                model="deepseek/deepseek-v4.1-flash-1017",
                 messages=[{"role": "user", "content": escalation_prompt}],
                 temperature=0.1
             )
